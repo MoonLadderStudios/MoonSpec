@@ -1,3 +1,7 @@
+# Moon Spec
+
+Moon Spec is a fork of GitHub Spec Kit focused on generating robust implementations from declarative designs using test-driven development.
+
 <div align="center">
     <img src="./media/logo_large.webp" alt="Spec Kit Logo" width="200" height="200"/>
     <h1>🌱 Spec Kit</h1>
