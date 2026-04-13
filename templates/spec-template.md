@@ -29,6 +29,15 @@
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
+## Assumptions
+
+<!--
+  ACTION REQUIRED: Include only when reasonable defaults were used to resolve unspecified details.
+  Remove this section if no assumptions were made.
+-->
+
+- [Assumption based on context, domain standards, or common product behavior]
+
 ## Requirements *(mandatory)*
 
 <!--

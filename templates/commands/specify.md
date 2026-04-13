@@ -104,6 +104,9 @@ Given that feature description, do this:
 
    **IMPORTANT**:
    - You must only create one feature per `/speckit.specify` invocation
+   - The generated spec MUST contain exactly one user story
+   - Do not generate P1/P2/P3 stories or multiple story sections
+   - If the input describes multiple independent stories, choose the primary story only when obvious and record the rest as out of scope; otherwise ask for clarification or direct the user to `/speckit.split` when starting from a technical design
    - The spec directory name and the git branch name are independent — they may be the same but that is the user's choice
    - The spec directory and file are always created by this command, never by the hook
 
@@ -122,11 +125,16 @@ Given that feature description, do this:
          - No reasonable default exists
        - **LIMIT: Maximum 3 [NEEDS CLARIFICATION] markers total**
        - Prioritize clarifications by impact: scope > security/privacy > user experience > technical details
-    4. Fill User Scenarios & Testing section
-       If no clear user flow: ERROR "Cannot determine user scenarios"
+    4. Fill the single User Story section
+       - Summary
+       - Goal
+       - Independent Test
+       - Acceptance Scenarios
+       - Edge Cases
+       If no clear independent story can be derived: ERROR "Cannot determine a single independently testable story"
     5. Generate Functional Requirements
        Each requirement must be testable
-       Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
+       Use reasonable defaults for unspecified details (document assumptions in the Assumptions section when assumptions are used)
     6. Define Success Criteria
        Create measurable, technology-agnostic outcomes
        Include both quantitative metrics (time, performance, volume) and qualitative measures (user satisfaction, task completion)
@@ -135,6 +143,8 @@ Given that feature description, do this:
     8. Return: SUCCESS (spec ready for planning)
 
 6. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
+   - Preserve the original user description verbatim in the `**Input**` field. Do not summarize or normalize it; downstream `/speckit.verify` uses it as the source request.
+   - Produce exactly one `## User Story - ...` section.
 
 7. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
 
@@ -157,10 +167,13 @@ Given that feature description, do this:
       ## Requirement Completeness
       
       - [ ] No [NEEDS CLARIFICATION] markers remain
+      - [ ] Exactly one user story is defined
       - [ ] Requirements are testable and unambiguous
       - [ ] Success criteria are measurable
       - [ ] Success criteria are technology-agnostic (no implementation details)
       - [ ] All acceptance scenarios are defined
+      - [ ] Independent Test describes how the story can be validated end-to-end
+      - [ ] Acceptance scenarios are concrete enough to derive unit and integration tests
       - [ ] Edge cases are identified
       - [ ] Scope is clearly bounded
       - [ ] Dependencies and assumptions identified
@@ -168,7 +181,7 @@ Given that feature description, do this:
       ## Feature Readiness
       
       - [ ] All functional requirements have clear acceptance criteria
-      - [ ] User scenarios cover primary flows
+      - [ ] The single user story covers the primary flow
       - [ ] Feature meets measurable outcomes defined in Success Criteria
       - [ ] No implementation details leak into specification
       
@@ -270,7 +283,7 @@ Given that feature description, do this:
 - Focus on **WHAT** users need and **WHY**.
 - Avoid HOW to implement (no tech stack, APIs, code structure).
 - Written for business stakeholders, not developers.
-- DO NOT create any checklists that are embedded in the spec. That will be a separate command.
+- DO NOT embed checklists in the spec. Write checklist files only where this command explicitly instructs.
 
 ### Section Requirements
 
@@ -283,7 +296,7 @@ Given that feature description, do this:
 When creating this spec from a user prompt:
 
 1. **Make informed guesses**: Use context, industry standards, and common patterns to fill gaps
-2. **Document assumptions**: Record reasonable defaults in the Assumptions section
+2. **Document assumptions**: Record reasonable defaults in the Assumptions section when assumptions are used
 3. **Limit clarifications**: Maximum 3 [NEEDS CLARIFICATION] markers - use only for critical decisions that:
    - Significantly impact feature scope or user experience
    - Have multiple reasonable interpretations with different implications
