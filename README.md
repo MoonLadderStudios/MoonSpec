@@ -3,11 +3,11 @@
 Moon Spec is a fork of GitHub Spec Kit focused on generating robust implementations from declarative designs using test-driven development.
 
 Notable changes:
+* New breakdown command extracts user stories from a technical design
 * Test-Driven Development (TDD) is the default strategy
 * One story per spec, not three
-* spec.md stories are expected to have more than one Independent Test item
-* Integration tests are encourage in addition to unit tests
-* New Verify command verifies the final implementation against the original feature request
+* Integration tests are explicitly encouraged in addition to unit tests
+* New verify command verifies the final implementation against the original feature request as a final check
 
 <div align="center">
     <img src="./media/logo_large.webp" alt="Spec Kit Logo" width="200" height="200"/>
