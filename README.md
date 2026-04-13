@@ -6,7 +6,7 @@ Notable changes:
 * New split command extracts user stories from a technical design
 * Test-Driven Development (TDD) is the default strategy
 * One story per spec, not three
-* Integration tests are encouraged in addition to unit tests
+* Integration tests are explicitly encouraged in addition to unit tests
 * New verify command verifies the final implementation against the original feature request as a final check
 
 <div align="center">
