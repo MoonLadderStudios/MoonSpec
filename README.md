@@ -8,6 +8,7 @@ Notable changes:
 * One story per spec, not three
 * Integration tests are explicitly encouraged in addition to unit tests
 * New verify command verifies the final implementation against the original feature request as a final check
+* New orchestrate command will take you from specify to verify
 
 <div align="center">
     <img src="./media/logo_large.webp" alt="Spec Kit Logo" width="200" height="200"/>
