@@ -7,9 +7,20 @@ description: Create or update a Moon Spec feature specification from a natural l
 
 Use this skill to perform the Moon Spec specify workflow.
 
+## When To Use
+
+Use this skill when the user wants to create or update a Moon Spec `spec.md` from:
+
+- A natural language feature request.
+- A referenced declarative design, contract, or source requirements document.
+- A request to run or reproduce `/speckit.specify`.
+
+Do not use this skill to split a broad design into multiple specs; use `/speckit.breakdown` for that.
+
 ## Inputs
 
 - Treat the user's request text as the feature description.
+- Do not ask the user to repeat the request unless it is empty or no independently testable story can be derived.
 - If the feature description is empty, stop with: `ERROR "No feature description provided"`.
 - Preserve the original feature description verbatim in the generated spec's `**Input**` field. Do not summarize or normalize it; `/speckit.verify` relies on this source request.
 - If the request references a source design file, contract, or declarative design artifact, resolve and read it before generating the spec.
@@ -33,8 +44,10 @@ For source-backed requests:
    - Behavior tables, acceptance criteria, invariants, limits, failure handling, and compatibility constraints.
    - Explicit non-goals or exclusions that constrain scope.
 4. Assign stable IDs: `DESIGN-REQ-001`, `DESIGN-REQ-002`, and so on.
-5. If the source artifact contains multiple independent stories, do not collapse them into one spec. Ask the user to choose one story, or direct them to `/speckit.split` when the goal is to extract stories from a broader technical design.
+5. If the source artifact contains multiple independent stories, do not collapse them into one spec. Ask the user to choose one story, or direct them to `/speckit.breakdown` when the goal is to extract stories from a broader technical or declarative design.
 6. If a source requirement is intentionally out of scope for the selected story, keep it in the source mapping as out of scope with a short rationale. Do not silently drop it.
+
+Complete source reading, requirement extraction, and single-story selection before creating the feature directory.
 
 ## Pre-Spec Hooks
 
@@ -107,9 +120,11 @@ Important constraints:
 - Create only one feature per invocation.
 - Generate exactly one user story in the spec.
 - Do not generate P1/P2/P3 stories or multiple story sections.
-- If the input describes multiple independent stories, choose the primary story only when obvious and record the rest as out of scope; otherwise ask for clarification or direct the user to `/speckit.split` when starting from a technical design.
+- If the input describes multiple independent stories, choose the primary story only when obvious and record the rest as out of scope; otherwise ask for clarification or direct the user to `/speckit.breakdown` when starting from a technical or declarative design.
+- If the request is too ambiguous to identify one independently testable story, ask one targeted question before creating files.
 - The spec directory name and git branch name are independent.
 - The spec directory and file are created by this workflow, not by hooks.
+- Do not use legacy branch-numbering logic to determine the feature directory. `.specify/feature.json` is the downstream locator.
 
 ## Generate The Spec
 
@@ -241,6 +256,18 @@ If `[NEEDS CLARIFICATION]` markers remain:
 
 After the user responds, replace each marker with the selected answer and re-run validation.
 
+## Reasonable Defaults
+
+Do not ask for clarification when a safe, conventional default is available. Record the assumption instead.
+
+Examples:
+
+- Data retention: use domain-standard retention unless the request specifies legal or policy constraints.
+- Error handling: require user-visible, recoverable failures where applicable.
+- Performance: use normal product expectations unless the request names a threshold.
+- Authentication: use the project's established auth pattern if one exists.
+- Integration style: use the project's existing interface patterns rather than inventing a new one.
+
 ## Success Criteria Guidance
 
 Success criteria must be:
@@ -263,6 +290,13 @@ Bad examples:
 - `Database can handle 1000 TPS`
 - `React components render efficiently`
 - `Redis cache hit rate above 80%`
+
+## Outputs
+
+- `SPECIFY_FEATURE_DIRECTORY/spec.md`
+- `SPECIFY_FEATURE_DIRECTORY/checklists/requirements.md`
+- `.specify/feature.json` pointing to the active feature directory
+- Source design mapping in `spec.md` when the request is source-backed
 
 ## Report And Post-Spec Hooks
 

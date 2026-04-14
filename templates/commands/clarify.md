@@ -72,6 +72,7 @@ Execution steps:
    - Core user goals & success criteria
    - Explicit out-of-scope declarations
    - User roles / personas differentiation
+   - Confirmation that the spec contains exactly one independently testable story
 
    Domain & Data Model:
    - Entities, attributes, relationships
@@ -177,7 +178,7 @@ Execution steps:
     - Append a bullet line immediately after acceptance: `- Q: <question> → A: <final answer>`.
     - Then immediately apply the clarification to the most appropriate section(s):
        - Functional ambiguity → Update or add a bullet in Functional Requirements.
-       - User interaction / actor distinction → Update User Stories or Actors subsection (if present) with clarified role, constraint, or scenario.
+       - User interaction / actor distinction → Update the User Story section or Actors subsection (if present) with clarified role, constraint, or scenario.
        - Data shape / entities → Update Data Model (add fields, types, relationships) preserving ordering; note added constraints succinctly.
        - Non-functional constraint → Add/modify measurable criteria in Success Criteria > Measurable Outcomes (convert vague adjective to metric or explicit target).
        - Edge case / negative flow → Add a new bullet under Edge Cases / Error Handling (or create such subsection if template provides placeholder for it).

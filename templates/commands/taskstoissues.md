@@ -52,6 +52,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 1. Run `{SCRIPT}` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 1. From the executed script, extract the path to **tasks**.
+1. Confirm the task list represents one story only, preserves TDD ordering, includes unit and integration test tasks, and includes the final `/speckit.verify` task when implementation is complete.
 1. Get the Git remote by running:
 
 ```bash

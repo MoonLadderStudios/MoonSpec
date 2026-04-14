@@ -14,7 +14,7 @@
   - User's specific checklist request
   - Feature requirements from spec.md
   - Technical context from plan.md
-  - Implementation details from tasks.md
+  - Task coverage context from tasks.md
   
   DO NOT keep these sample items in the generated checklist file.
   ============================================================================
@@ -22,15 +22,15 @@
 
 ## [Category 1]
 
-- [ ] CHK001 First checklist item with clear action
-- [ ] CHK002 Second checklist item
-- [ ] CHK003 Third checklist item
+- [ ] CHK001 Are the relevant requirements complete for this checklist focus?
+- [ ] CHK002 Are ambiguous terms clarified with measurable criteria?
+- [ ] CHK003 Are acceptance scenarios traceable to requirements?
 
 ## [Category 2]
 
-- [ ] CHK004 Another category item
-- [ ] CHK005 Item with specific criteria
-- [ ] CHK006 Final item in this category
+- [ ] CHK004 Are edge cases and failure modes documented where they affect the story?
+- [ ] CHK005 Are unit and integration test expectations derivable from the requirements?
+- [ ] CHK006 Are out-of-scope items and assumptions explicit?
 
 ## Notes
 

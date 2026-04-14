@@ -106,7 +106,7 @@ Given that feature description, do this:
    - You must only create one feature per `/speckit.specify` invocation
    - The generated spec MUST contain exactly one user story
    - Do not generate P1/P2/P3 stories or multiple story sections
-   - If the input describes multiple independent stories, choose the primary story only when obvious and record the rest as out of scope; otherwise ask for clarification or direct the user to `/speckit.split` when starting from a technical design
+   - If the input describes multiple independent stories, choose the primary story only when obvious and record the rest as out of scope; otherwise ask for clarification or direct the user to `/speckit.breakdown` when starting from a technical or declarative design
    - The spec directory name and the git branch name are independent — they may be the same but that is the user's choice
    - The spec directory and file are always created by this command, never by the hook
 

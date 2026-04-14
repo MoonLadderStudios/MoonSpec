@@ -14,9 +14,11 @@ from ..manifest import IntegrationManifest
 # when a user invokes the slash command in Claude Code.
 ARGUMENT_HINTS: dict[str, str] = {
     "specify": "Describe the feature you want to specify",
+    "breakdown": "Technical or declarative design to split into one-story specs",
     "plan": "Optional guidance for the planning phase",
     "tasks": "Optional task generation constraints",
     "implement": "Optional implementation guidance or task filter",
+    "verify": "Optional focus areas for final implementation verification",
     "analyze": "Optional focus areas for analysis",
     "clarify": "Optional areas to clarify in the spec",
     "constitution": "Principles or values for the project constitution",

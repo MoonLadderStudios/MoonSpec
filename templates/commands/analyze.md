@@ -79,7 +79,7 @@ Load only the minimal necessary context from each artifact:
 - Overview/Context
 - Functional Requirements
 - Success Criteria (measurable outcomes — e.g., performance, security, availability, user success, business impact)
-- User Stories
+- User Story
 - Edge Cases (if present)
 
 **From plan.md:**
@@ -106,8 +106,8 @@ Load only the minimal necessary context from each artifact:
 Create internal representations (do not include raw artifacts in output):
 
 - **Requirements inventory**: For each Functional Requirement (FR-###) and Success Criterion (SC-###), record a stable key. Use the explicit FR-/SC- identifier as the primary key when present, and optionally also derive an imperative-phrase slug for readability (e.g., "User can upload file" → `user-can-upload-file`). Include only Success Criteria items that require buildable work (e.g., load-testing infrastructure, security audit tooling), and exclude post-launch outcome metrics and business KPIs (e.g., "Reduce support tickets by 50%").
-- **User story/action inventory**: Discrete user actions with acceptance criteria
-- **Task coverage mapping**: Map each task to one or more requirements or stories (inference by keyword / explicit reference patterns like IDs or key phrases)
+- **User story/action inventory**: The single user story plus discrete user actions with acceptance criteria
+- **Task coverage mapping**: Map each task to one or more requirements or story actions (inference by keyword / explicit reference patterns like IDs or key phrases)
 - **Constitution rule set**: Extract principle names and MUST/SHOULD normative statements
 
 ### 4. Detection Passes (Token-Efficient Analysis)
@@ -127,7 +127,9 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 #### C. Underspecification
 
 - Requirements with verbs but missing object or measurable outcome
-- User stories missing acceptance criteria alignment
+- The single user story is missing acceptance criteria alignment
+- More than one user story in `spec.md`
+- Missing required unit test tasks or integration test tasks
 - Tasks referencing files or components not defined in spec/plan
 
 #### D. Constitution Alignment
@@ -146,6 +148,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 - Terminology drift (same concept named differently across files)
 - Data entities referenced in plan but absent in spec (or vice versa)
 - Task ordering contradictions (e.g., integration tasks before foundational setup tasks without dependency note)
+- TDD ordering contradictions (implementation tasks before required failing unit or integration tests)
 - Conflicting requirements (e.g., one requires Next.js while other specifies Vue)
 
 ### 5. Severity Assignment
@@ -153,7 +156,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 Use this heuristic to prioritize findings:
 
 - **CRITICAL**: Violates constitution MUST, missing core spec artifact, or requirement with zero coverage that blocks baseline functionality
-- **HIGH**: Duplicate or conflicting requirement, ambiguous security/performance attribute, untestable acceptance criterion
+- **HIGH**: Duplicate or conflicting requirement, ambiguous security/performance attribute, untestable acceptance criterion, missing required unit or integration test coverage
 - **MEDIUM**: Terminology drift, missing non-functional task coverage, underspecified edge case
 - **LOW**: Style/wording improvements, minor redundancy not affecting execution order
 
