@@ -17,6 +17,10 @@ from specify_cli.integrations.base import SkillsIntegration
 from specify_cli.integrations.manifest import IntegrationManifest
 
 
+def _command_stems_for(integration) -> list[str]:
+    return [template.stem for template in integration.list_command_templates()]
+
+
 class SkillsIntegrationTests:
     """Mixin — set class-level constants and inherit these tests.
 
@@ -99,10 +103,7 @@ class SkillsIntegrationTests:
         created = i.setup(tmp_path, m)
         skill_files = [f for f in created if "scripts" not in f.parts]
 
-        expected_commands = {
-            "analyze", "checklist", "clarify", "constitution",
-            "implement", "plan", "specify", "tasks", "taskstoissues",
-        }
+        expected_commands = set(_command_stems_for(i))
 
         # Derive command names from the skill directory names
         actual_commands = set()
@@ -297,11 +298,6 @@ class SkillsIntegrationTests:
 
     # -- Complete file inventory ------------------------------------------
 
-    _SKILL_COMMANDS = [
-        "analyze", "checklist", "clarify", "constitution",
-        "implement", "plan", "specify", "tasks", "taskstoissues",
-    ]
-
     def _expected_files(self, script_variant: str) -> list[str]:
         """Build the full expected file list for a given script variant."""
         i = get_integration(self.KEY)
@@ -309,7 +305,7 @@ class SkillsIntegrationTests:
 
         files = []
         # Skill files
-        for cmd in self._SKILL_COMMANDS:
+        for cmd in _command_stems_for(i):
             files.append(f"{skills_prefix}/speckit-{cmd}/SKILL.md")
         # Integration metadata
         files += [

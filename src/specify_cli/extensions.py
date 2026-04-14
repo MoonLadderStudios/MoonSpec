@@ -26,15 +26,19 @@ from packaging import version as pkg_version
 from packaging.specifiers import SpecifierSet, InvalidSpecifier
 
 _FALLBACK_CORE_COMMAND_NAMES = frozenset({
+    "align",
     "analyze",
+    "breakdown",
     "checklist",
     "clarify",
     "constitution",
     "implement",
+    "orchestrate",
     "plan",
     "specify",
     "tasks",
     "taskstoissues",
+    "verify",
 })
 EXTENSION_COMMAND_NAME_PATTERN = re.compile(r"^speckit\.([a-z0-9-]+)\.([a-z0-9-]+)$")
 

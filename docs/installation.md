@@ -72,8 +72,11 @@ uvx --from git+https://github.com/github/spec-kit.git@vX.Y.Z specify init <proje
 After initialization, you should see the following commands available in your AI agent:
 
 - `/speckit.specify` - Create specifications
+- `/speckit.orchestrate` - Run the full workflow end to end
 - `/speckit.plan` - Generate implementation plans  
 - `/speckit.tasks` - Break down into actionable tasks
+- `/speckit.implement` - Build from tasks
+- `/speckit.verify` - Verify the final implementation
 
 The `.specify/scripts` directory will contain both `.sh` and `.ps1` scripts.
 

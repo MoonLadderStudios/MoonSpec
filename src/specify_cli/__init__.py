@@ -859,9 +859,13 @@ DEFAULT_SKILLS_DIR = ".agents/skills"
 NATIVE_SKILLS_AGENTS = {"codex", "kimi"}
 SKILL_DESCRIPTIONS = {
     "specify": "Create or update feature specifications from natural language descriptions.",
+    "breakdown": "Extract coverage-checked one-story specs from broad technical or declarative designs.",
     "plan": "Generate technical implementation plans from feature specifications.",
     "tasks": "Break down implementation plans into actionable task lists.",
+    "align": "Analyze and automatically remediate artifact drift before implementation.",
     "implement": "Execute all tasks from the task breakdown to build the feature.",
+    "verify": "Verify the final implementation against the original request, spec, plan, tasks, and tests.",
+    "orchestrate": "Coordinate the full Moon Spec workflow from request or design through final verification.",
     "analyze": "Perform cross-artifact consistency analysis across spec.md, plan.md, and tasks.md.",
     "clarify": "Structured clarification workflow for underspecified requirements.",
     "constitution": "Create or update project governing principles and development guidelines.",
@@ -1422,6 +1426,7 @@ def init(
     steps_lines.append(f"   {step_num}.3 [cyan]{_display_cmd('plan')}[/] - Create implementation plan")
     steps_lines.append(f"   {step_num}.4 [cyan]{_display_cmd('tasks')}[/] - Generate actionable tasks")
     steps_lines.append(f"   {step_num}.5 [cyan]{_display_cmd('implement')}[/] - Execute implementation")
+    steps_lines.append(f"   {step_num}.6 [cyan]{_display_cmd('verify')}[/] - Verify final implementation")
 
     steps_panel = Panel("\n".join(steps_lines), title="Next Steps", border_style="cyan", padding=(1,2))
     console.print()
@@ -1435,7 +1440,10 @@ def init(
     enhancement_lines = [
         enhancement_intro,
         "",
+        f"○ [cyan]{_display_cmd('orchestrate')}[/] [bright_black](optional)[/bright_black] - Run the full workflow from request or design through [cyan]{_display_cmd('verify')}[/]",
+        f"○ [cyan]{_display_cmd('breakdown')}[/] [bright_black](optional)[/bright_black] - Split a broad technical or declarative design into one-story specs",
         f"○ [cyan]{_display_cmd('clarify')}[/] [bright_black](optional)[/bright_black] - Ask structured questions to de-risk ambiguous areas before planning (run before [cyan]{_display_cmd('plan')}[/] if used)",
+        f"○ [cyan]{_display_cmd('align')}[/] [bright_black](optional)[/bright_black] - Automatically align artifacts after [cyan]{_display_cmd('tasks')}[/] and before [cyan]{_display_cmd('implement')}[/]",
         f"○ [cyan]{_display_cmd('analyze')}[/] [bright_black](optional)[/bright_black] - Cross-artifact consistency & alignment report (after [cyan]{_display_cmd('tasks')}[/], before [cyan]{_display_cmd('implement')}[/])",
         f"○ [cyan]{_display_cmd('checklist')}[/] [bright_black](optional)[/bright_black] - Generate quality checklists to validate requirements completeness, clarity, and consistency (after [cyan]{_display_cmd('plan')}[/])"
     ]

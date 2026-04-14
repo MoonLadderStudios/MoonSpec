@@ -352,11 +352,14 @@ Essential commands for the Spec-Driven Development workflow:
 | Command                  | Agent Skill            | Description                                                                |
 | ------------------------ | ---------------------- | -------------------------------------------------------------------------- |
 | `/speckit.constitution`  | `speckit-constitution` | Create or update project governing principles and development guidelines   |
+| `/speckit.orchestrate`   | `speckit-orchestrate`  | Run the workflow from request or design through final verification         |
 | `/speckit.specify`       | `speckit-specify`      | Define what you want to build (requirements and user stories)              |
+| `/speckit.breakdown`     | `speckit-breakdown`    | Split broad technical or declarative designs into one-story specs          |
 | `/speckit.plan`          | `speckit-plan`         | Create technical implementation plans with your chosen tech stack          |
 | `/speckit.tasks`         | `speckit-tasks`        | Generate actionable task lists for implementation                          |
 | `/speckit.taskstoissues` | `speckit-taskstoissues`| Convert generated task lists into GitHub issues for tracking and execution |
 | `/speckit.implement`     | `speckit-implement`    | Execute all tasks to build the feature according to the plan               |
+| `/speckit.verify`        | `speckit-verify`       | Verify implementation against the original request and required tests      |
 
 #### Optional Commands
 
@@ -365,6 +368,7 @@ Additional commands for enhanced quality and validation:
 | Command              | Agent Skill            | Description                                                                                                                          |
 | -------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `/speckit.clarify`   | `speckit-clarify`      | Clarify underspecified areas (recommended before `/speckit.plan`; formerly `/quizme`)                                                |
+| `/speckit.align`     | `speckit-align`        | Automatically remediate artifact drift after `/speckit.tasks`, before `/speckit.implement`                                           |
 | `/speckit.analyze`   | `speckit-analyze`      | Cross-artifact consistency & coverage analysis (run after `/speckit.tasks`, before `/speckit.implement`)                             |
 | `/speckit.checklist` | `speckit-checklist`    | Generate custom quality checklists that validate requirements completeness, clarity, and consistency (like "unit tests for English") |
 

@@ -12,6 +12,10 @@ from specify_cli.integrations.base import MarkdownIntegration
 from specify_cli.integrations.manifest import IntegrationManifest
 
 
+def _command_stems_for(integration) -> list[str]:
+    return [template.stem for template in integration.list_command_templates()]
+
+
 class MarkdownIntegrationTests:
     """Mixin — set class-level constants and inherit these tests.
 
@@ -205,11 +209,6 @@ class MarkdownIntegrationTests:
 
     # -- Complete file inventory ------------------------------------------
 
-    COMMAND_STEMS = [
-        "analyze", "checklist", "clarify", "constitution",
-        "implement", "plan", "specify", "tasks", "taskstoissues",
-    ]
-
     def _expected_files(self, script_variant: str) -> list[str]:
         """Build the expected file list for this integration + script variant."""
         i = get_integration(self.KEY)
@@ -217,7 +216,7 @@ class MarkdownIntegrationTests:
         files = []
 
         # Command files
-        for stem in self.COMMAND_STEMS:
+        for stem in _command_stems_for(i):
             files.append(f"{cmd_dir}/speckit.{stem}.md")
 
         # Integration scripts

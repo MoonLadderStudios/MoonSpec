@@ -7,6 +7,10 @@ from specify_cli.integrations import get_integration
 from specify_cli.integrations.manifest import IntegrationManifest
 
 
+def _command_stems_for(integration) -> list[str]:
+    return [template.stem for template in integration.list_command_templates()]
+
+
 class TestCopilotIntegration:
     def test_copilot_key_and_config(self):
         copilot = get_integration("copilot")
@@ -123,13 +127,61 @@ class TestCopilotIntegration:
         agents_dir = tmp_path / ".github" / "agents"
         assert agents_dir.is_dir()
         agent_files = sorted(agents_dir.glob("speckit.*.agent.md"))
-        assert len(agent_files) == 11
-        expected_commands = {
-            "analyze", "breakdown", "checklist", "clarify", "constitution",
-            "implement", "plan", "specify", "tasks", "taskstoissues", "verify",
-        }
+        expected_commands = set(_command_stems_for(copilot))
+        assert len(agent_files) == len(expected_commands)
         actual_commands = {f.name.removeprefix("speckit.").removesuffix(".agent.md") for f in agent_files}
         assert actual_commands == expected_commands
+
+    @staticmethod
+    def _expected_files(script_variant: str) -> list[str]:
+        from specify_cli.integrations.copilot import CopilotIntegration
+
+        copilot = CopilotIntegration()
+        commands = _command_stems_for(copilot)
+        files = []
+
+        for command in commands:
+            files.append(f".github/agents/speckit.{command}.agent.md")
+        for command in commands:
+            files.append(f".github/prompts/speckit.{command}.prompt.md")
+
+        files.extend([
+            ".vscode/settings.json",
+            ".specify/integration.json",
+            ".specify/init-options.json",
+            ".specify/integrations/copilot.manifest.json",
+            ".specify/integrations/speckit.manifest.json",
+            ".specify/integrations/copilot/scripts/update-context.ps1",
+            ".specify/integrations/copilot/scripts/update-context.sh",
+        ])
+
+        if script_variant == "sh":
+            files.extend([
+                ".specify/scripts/bash/check-prerequisites.sh",
+                ".specify/scripts/bash/common.sh",
+                ".specify/scripts/bash/create-new-feature.sh",
+                ".specify/scripts/bash/setup-plan.sh",
+                ".specify/scripts/bash/update-agent-context.sh",
+            ])
+        else:
+            files.extend([
+                ".specify/scripts/powershell/check-prerequisites.ps1",
+                ".specify/scripts/powershell/common.ps1",
+                ".specify/scripts/powershell/create-new-feature.ps1",
+                ".specify/scripts/powershell/setup-plan.ps1",
+                ".specify/scripts/powershell/update-agent-context.ps1",
+            ])
+
+        files.extend([
+            ".specify/templates/agent-file-template.md",
+            ".specify/templates/checklist-template.md",
+            ".specify/templates/constitution-template.md",
+            ".specify/templates/plan-template.md",
+            ".specify/templates/spec-template.md",
+            ".specify/templates/tasks-template.md",
+            ".specify/memory/constitution.md",
+        ])
+        return sorted(files)
 
     def test_templates_are_processed(self, tmp_path):
         from specify_cli.integrations.copilot import CopilotIntegration
@@ -161,49 +213,7 @@ class TestCopilotIntegration:
             os.chdir(old_cwd)
         assert result.exit_code == 0
         actual = sorted(p.relative_to(project).as_posix() for p in project.rglob("*") if p.is_file())
-        expected = sorted([
-            ".github/agents/speckit.analyze.agent.md",
-            ".github/agents/speckit.breakdown.agent.md",
-            ".github/agents/speckit.checklist.agent.md",
-            ".github/agents/speckit.clarify.agent.md",
-            ".github/agents/speckit.constitution.agent.md",
-            ".github/agents/speckit.implement.agent.md",
-            ".github/agents/speckit.plan.agent.md",
-            ".github/agents/speckit.specify.agent.md",
-            ".github/agents/speckit.tasks.agent.md",
-            ".github/agents/speckit.taskstoissues.agent.md",
-            ".github/agents/speckit.verify.agent.md",
-            ".github/prompts/speckit.analyze.prompt.md",
-            ".github/prompts/speckit.breakdown.prompt.md",
-            ".github/prompts/speckit.checklist.prompt.md",
-            ".github/prompts/speckit.clarify.prompt.md",
-            ".github/prompts/speckit.constitution.prompt.md",
-            ".github/prompts/speckit.implement.prompt.md",
-            ".github/prompts/speckit.plan.prompt.md",
-            ".github/prompts/speckit.specify.prompt.md",
-            ".github/prompts/speckit.tasks.prompt.md",
-            ".github/prompts/speckit.taskstoissues.prompt.md",
-            ".github/prompts/speckit.verify.prompt.md",
-            ".vscode/settings.json",
-            ".specify/integration.json",
-            ".specify/init-options.json",
-            ".specify/integrations/copilot.manifest.json",
-            ".specify/integrations/speckit.manifest.json",
-            ".specify/integrations/copilot/scripts/update-context.ps1",
-            ".specify/integrations/copilot/scripts/update-context.sh",
-            ".specify/scripts/bash/check-prerequisites.sh",
-            ".specify/scripts/bash/common.sh",
-            ".specify/scripts/bash/create-new-feature.sh",
-            ".specify/scripts/bash/setup-plan.sh",
-            ".specify/scripts/bash/update-agent-context.sh",
-            ".specify/templates/agent-file-template.md",
-            ".specify/templates/checklist-template.md",
-            ".specify/templates/constitution-template.md",
-            ".specify/templates/plan-template.md",
-            ".specify/templates/spec-template.md",
-            ".specify/templates/tasks-template.md",
-            ".specify/memory/constitution.md",
-        ])
+        expected = self._expected_files("sh")
         assert actual == expected, (
             f"Missing: {sorted(set(expected) - set(actual))}\n"
             f"Extra: {sorted(set(actual) - set(expected))}"
@@ -225,49 +235,7 @@ class TestCopilotIntegration:
             os.chdir(old_cwd)
         assert result.exit_code == 0
         actual = sorted(p.relative_to(project).as_posix() for p in project.rglob("*") if p.is_file())
-        expected = sorted([
-            ".github/agents/speckit.analyze.agent.md",
-            ".github/agents/speckit.breakdown.agent.md",
-            ".github/agents/speckit.checklist.agent.md",
-            ".github/agents/speckit.clarify.agent.md",
-            ".github/agents/speckit.constitution.agent.md",
-            ".github/agents/speckit.implement.agent.md",
-            ".github/agents/speckit.plan.agent.md",
-            ".github/agents/speckit.specify.agent.md",
-            ".github/agents/speckit.tasks.agent.md",
-            ".github/agents/speckit.taskstoissues.agent.md",
-            ".github/agents/speckit.verify.agent.md",
-            ".github/prompts/speckit.analyze.prompt.md",
-            ".github/prompts/speckit.breakdown.prompt.md",
-            ".github/prompts/speckit.checklist.prompt.md",
-            ".github/prompts/speckit.clarify.prompt.md",
-            ".github/prompts/speckit.constitution.prompt.md",
-            ".github/prompts/speckit.implement.prompt.md",
-            ".github/prompts/speckit.plan.prompt.md",
-            ".github/prompts/speckit.specify.prompt.md",
-            ".github/prompts/speckit.tasks.prompt.md",
-            ".github/prompts/speckit.taskstoissues.prompt.md",
-            ".github/prompts/speckit.verify.prompt.md",
-            ".vscode/settings.json",
-            ".specify/integration.json",
-            ".specify/init-options.json",
-            ".specify/integrations/copilot.manifest.json",
-            ".specify/integrations/speckit.manifest.json",
-            ".specify/integrations/copilot/scripts/update-context.ps1",
-            ".specify/integrations/copilot/scripts/update-context.sh",
-            ".specify/scripts/powershell/check-prerequisites.ps1",
-            ".specify/scripts/powershell/common.ps1",
-            ".specify/scripts/powershell/create-new-feature.ps1",
-            ".specify/scripts/powershell/setup-plan.ps1",
-            ".specify/scripts/powershell/update-agent-context.ps1",
-            ".specify/templates/agent-file-template.md",
-            ".specify/templates/checklist-template.md",
-            ".specify/templates/constitution-template.md",
-            ".specify/templates/plan-template.md",
-            ".specify/templates/spec-template.md",
-            ".specify/templates/tasks-template.md",
-            ".specify/memory/constitution.md",
-        ])
+        expected = self._expected_files("ps")
         assert actual == expected, (
             f"Missing: {sorted(set(expected) - set(actual))}\n"
             f"Extra: {sorted(set(actual) - set(expected))}"

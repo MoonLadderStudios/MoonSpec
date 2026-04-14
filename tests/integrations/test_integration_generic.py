@@ -9,6 +9,10 @@ from specify_cli.integrations.base import MarkdownIntegration
 from specify_cli.integrations.manifest import IntegrationManifest
 
 
+def _command_stems_for(integration) -> list[str]:
+    return [template.stem for template in integration.list_command_templates()]
+
+
 class TestGenericIntegration:
     """Tests for GenericIntegration — requires --commands-dir option."""
 
@@ -221,15 +225,10 @@ class TestGenericIntegration:
             for p in project.rglob("*") if p.is_file()
         )
         expected = sorted([
-            ".myagent/commands/speckit.analyze.md",
-            ".myagent/commands/speckit.checklist.md",
-            ".myagent/commands/speckit.clarify.md",
-            ".myagent/commands/speckit.constitution.md",
-            ".myagent/commands/speckit.implement.md",
-            ".myagent/commands/speckit.plan.md",
-            ".myagent/commands/speckit.specify.md",
-            ".myagent/commands/speckit.tasks.md",
-            ".myagent/commands/speckit.taskstoissues.md",
+            *[
+                f".myagent/commands/speckit.{stem}.md"
+                for stem in _command_stems_for(get_integration("generic"))
+            ],
             ".specify/init-options.json",
             ".specify/integration.json",
             ".specify/integrations/generic.manifest.json",
@@ -277,15 +276,10 @@ class TestGenericIntegration:
             for p in project.rglob("*") if p.is_file()
         )
         expected = sorted([
-            ".myagent/commands/speckit.analyze.md",
-            ".myagent/commands/speckit.checklist.md",
-            ".myagent/commands/speckit.clarify.md",
-            ".myagent/commands/speckit.constitution.md",
-            ".myagent/commands/speckit.implement.md",
-            ".myagent/commands/speckit.plan.md",
-            ".myagent/commands/speckit.specify.md",
-            ".myagent/commands/speckit.tasks.md",
-            ".myagent/commands/speckit.taskstoissues.md",
+            *[
+                f".myagent/commands/speckit.{stem}.md"
+                for stem in _command_stems_for(get_integration("generic"))
+            ],
             ".specify/init-options.json",
             ".specify/integration.json",
             ".specify/integrations/generic.manifest.json",
