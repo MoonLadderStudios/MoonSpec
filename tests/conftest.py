@@ -1,10 +1,10 @@
-"""Shared test helpers for the Spec Kit test suite."""
+from __future__ import annotations
 
-import re
+import sys
+from pathlib import Path
 
-_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
-
-
-def strip_ansi(text: str) -> str:
-    """Remove ANSI escape codes from Rich-formatted CLI output."""
-    return _ANSI_ESCAPE_RE.sub("", text)
+ROOT = Path(__file__).resolve().parents[1]
+for path in (ROOT, ROOT / "src"):
+    value = str(path)
+    if value not in sys.path:
+        sys.path.insert(0, value)

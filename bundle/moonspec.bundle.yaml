@@ -1,0 +1,137 @@
+schemaVersion: 1
+name: moonspec
+version: 0.1.0
+description: Canonical MoonSpec workflow bundle
+
+identity:
+  canonicalPrefix: moonspec
+  skillPrefix: moonspec-
+  commandPrefix: /moonspec.
+
+exports:
+  skills:
+    - id: moonspec-breakdown
+      path: skills/moonspec-breakdown/SKILL.md
+      wrappers:
+        openai: skills/moonspec-breakdown/agents/openai.yaml
+    - id: moonspec-specify
+      path: skills/moonspec-specify/SKILL.md
+      wrappers:
+        openai: skills/moonspec-specify/agents/openai.yaml
+    - id: moonspec-plan
+      path: skills/moonspec-plan/SKILL.md
+      wrappers:
+        openai: skills/moonspec-plan/agents/openai.yaml
+    - id: moonspec-tasks
+      path: skills/moonspec-tasks/SKILL.md
+      wrappers:
+        openai: skills/moonspec-tasks/agents/openai.yaml
+    - id: moonspec-align
+      path: skills/moonspec-align/SKILL.md
+      wrappers:
+        openai: skills/moonspec-align/agents/openai.yaml
+    - id: moonspec-implement
+      path: skills/moonspec-implement/SKILL.md
+      wrappers:
+        openai: skills/moonspec-implement/agents/openai.yaml
+    - id: moonspec-verify
+      path: skills/moonspec-verify/SKILL.md
+      wrappers:
+        openai: skills/moonspec-verify/agents/openai.yaml
+    - id: moonspec-doc-reconcile
+      path: skills/moonspec-doc-reconcile/SKILL.md
+      wrappers:
+        openai: skills/moonspec-doc-reconcile/agents/openai.yaml
+    - id: moonspec-orchestrate
+      path: skills/moonspec-orchestrate/SKILL.md
+      wrappers:
+        openai: skills/moonspec-orchestrate/agents/openai.yaml
+
+  presets:
+    - slug: moonspec-orchestrate
+      path: presets/moonspec-orchestrate.yaml
+
+  templates:
+    - id: spec
+      path: templates/spec-template.md
+    - id: plan
+      path: templates/plan-template.md
+    - id: tasks
+      path: templates/tasks-template.md
+    - id: checklist
+      path: templates/checklist-template.md
+    - id: agent-file
+      path: templates/agent-file-template.md
+
+  commands:
+    - id: moonspec.breakdown
+      slashCommand: /moonspec.breakdown
+      markdown: commands/markdown/moonspec.breakdown.md
+      gemini: commands/gemini/moonspec.breakdown.toml
+      skill: moonspec-breakdown
+    - id: moonspec.specify
+      slashCommand: /moonspec.specify
+      markdown: commands/markdown/moonspec.specify.md
+      gemini: commands/gemini/moonspec.specify.toml
+      skill: moonspec-specify
+    - id: moonspec.plan
+      slashCommand: /moonspec.plan
+      markdown: commands/markdown/moonspec.plan.md
+      gemini: commands/gemini/moonspec.plan.toml
+      skill: moonspec-plan
+    - id: moonspec.tasks
+      slashCommand: /moonspec.tasks
+      markdown: commands/markdown/moonspec.tasks.md
+      gemini: commands/gemini/moonspec.tasks.toml
+      skill: moonspec-tasks
+    - id: moonspec.align
+      slashCommand: /moonspec.align
+      markdown: commands/markdown/moonspec.align.md
+      gemini: commands/gemini/moonspec.align.toml
+      skill: moonspec-align
+    - id: moonspec.implement
+      slashCommand: /moonspec.implement
+      markdown: commands/markdown/moonspec.implement.md
+      gemini: commands/gemini/moonspec.implement.toml
+      skill: moonspec-implement
+    - id: moonspec.verify
+      slashCommand: /moonspec.verify
+      markdown: commands/markdown/moonspec.verify.md
+      gemini: commands/gemini/moonspec.verify.toml
+      skill: moonspec-verify
+    - id: moonspec.doc-reconcile
+      slashCommand: /moonspec.doc-reconcile
+      markdown: commands/markdown/moonspec.doc-reconcile.md
+      gemini: commands/gemini/moonspec.doc-reconcile.toml
+      skill: moonspec-doc-reconcile
+    - id: moonspec.orchestrate
+      slashCommand: /moonspec.orchestrate
+      markdown: commands/markdown/moonspec.orchestrate.md
+      gemini: commands/gemini/moonspec.orchestrate.toml
+      skill: moonspec-orchestrate
+
+  scripts:
+    - id: common
+      path: scripts/bash/common.sh
+    - id: create-new-feature
+      path: scripts/bash/create-new-feature.sh
+    - id: setup-plan
+      path: scripts/bash/setup-plan.sh
+    - id: check-prerequisites
+      path: scripts/bash/check-prerequisites.sh
+    - id: update-agent-context
+      path: scripts/bash/update-agent-context.sh
+    - id: validate-implementation-scope
+      path: scripts/bash/validate-implementation-scope.sh
+
+  docs:
+    - id: document-model
+      path: docs/MoonSpecDocumentModel.md
+    - id: bundle-integration
+      path: docs/BundleIntegration.md
+    - id: authoring-guide
+      path: docs/AuthoringGuide.md
+
+projections:
+  moonmind:
+    path: projections/moonmind.yaml
