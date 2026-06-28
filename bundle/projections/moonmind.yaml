@@ -1,0 +1,39 @@
+schemaVersion: 1
+consumer: moonmind
+
+mappings:
+  - from: skills/
+    to: .agents/skills/
+    mode: directory
+
+  - from: templates/
+    to: .specify/templates/
+    mode: directory
+
+  - from: commands/markdown/
+    to: .specify/templates/commands/
+    mode: directory
+
+  - from: scripts/bash/
+    to: .specify/scripts/bash/
+    mode: directory
+
+  - from: presets/moonspec-orchestrate.yaml
+    to: api_service/data/presets/moonspec-orchestrate.yaml
+    mode: file
+
+  - from: docs/MoonSpecDocumentModel.md
+    to: docs/Workflows/MoonSpecDocumentModel.md
+    mode: file
+
+  - from: commands/gemini/
+    to: .gemini/commands/
+    mode: directory
+
+unexpectedLegacy:
+  - .gemini/commands/speckit.*.toml
+  - .specify/templates/commands/analyze.md
+  - .specify/templates/commands/checklist.md
+  - .specify/templates/commands/clarify.md
+  - .specify/templates/commands/constitution.md
+  - .specify/templates/commands/taskstoissues.md
