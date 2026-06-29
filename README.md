@@ -1,22 +1,14 @@
 # MoonSpec
 
-MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to single-story, test-driven implementation workflows. MoonMind utilizes MoonSpec extensively, but you do not need to use MoonMind to use MoonSpec.
+MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to solving some of the issues we've encountered:
 
-Key Strategies:
 1. Maintain declarative, desired-state documents as the primary source of truth
 2. Generate imperative plans and tasks as temporary artifacts to assist implementation
 3. Implement code using Test-Driven Development (TDD)
 4. Breakdown declarative documents into one or more stories
 5. Implement one story at a time (not 3+)
-
-The repository packages the assets that consumers need to run the MoonSpec lifecycle:
-
-- agent skills under `bundle/skills/`
-- command wrappers under `bundle/commands/`
-- spec, plan, task, checklist, and agent templates under `bundle/templates/`
-- helper scripts under `bundle/scripts/`
-- portable preset definitions under `bundle/presets/`
-- bundle docs and projection recipes under `bundle/docs/` and `bundle/projections/`
+6. Add a verify step to enable a corrective loop
+7. Move a concise constitution into AGENTS.md
 
 ## Workflow Identity
 
@@ -37,6 +29,15 @@ The main lifecycle is:
 9. `/moonspec.orchestrate` to coordinate the lifecycle for a preselected one-story request.
 
 ## Bundle Layout
+
+The repository packages the assets that consumers need to run the MoonSpec lifecycle:
+
+- agent skills under `bundle/skills/`
+- command wrappers under `bundle/commands/`
+- spec, plan, task, checklist, and agent templates under `bundle/templates/`
+- helper scripts under `bundle/scripts/`
+- portable preset definitions under `bundle/presets/`
+- bundle docs and projection recipes under `bundle/docs/` and `bundle/projections/`
 
 ```text
 bundle/
