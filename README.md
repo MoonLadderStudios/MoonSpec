@@ -1,6 +1,13 @@
 # MoonSpec
 
-MoonSpec is the canonical MoonLadder workflow bundle for one-story, test-driven implementation workflows.
+MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to single-story, test-driven implementation workflows. MoonMind utilizes MoonSpec extensively, but you do not need to use MoonMind to use MoonSpec.
+
+Key Strategies:
+1. Maintain declarative, desired-state documents as the primary source of truth
+2. Generate imperative plans and tasks as temporary artifacts to assist implementation
+3. Implement code using Test-Driven Development (TDD)
+4. Breakdown declarative documents into one or more stories
+5. Implement one story at a time (not 3+)
 
 The repository packages the assets that consumers need to run the MoonSpec lifecycle:
 
