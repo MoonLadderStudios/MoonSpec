@@ -1,6 +1,6 @@
 # MoonSpec
 
-MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to solving some of the issues we've encountered:
+MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to Spec-Driven Development:
 
 1. Maintain declarative, desired-state documents as the primary source of truth
 2. Generate imperative plans and tasks as temporary artifacts to assist implementation
