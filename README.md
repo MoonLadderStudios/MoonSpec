@@ -8,7 +8,7 @@ MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to Spec-Drive
 4. Breakdown declarative documents into one or more stories
 5. Implement one story at a time (not 3+)
 6. Add a verify step to enable a corrective loop
-7. Move a concise constitution into AGENTS.md
+7. Keep the constitution equivalent in AGENTS.md
 
 ## Workflow Identity
 
