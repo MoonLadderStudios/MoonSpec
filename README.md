@@ -3,12 +3,13 @@
 MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to Spec-Driven Development:
 
 1. Maintain declarative, desired-state documents as the primary source of truth
-2. Generate imperative plans and tasks as temporary artifacts to assist implementation
-3. Implement code using Test-Driven Development (TDD)
-4. Breakdown declarative documents into one or more stories
-5. Implement one story at a time (not 3+)
-6. Add a verify step to enable a corrective loop
-7. Keep the constitution equivalent in AGENTS.md
+2. Breakdown declarative documents into one or more stories
+6. Implement one story at a time (not 3+)
+3. Generate imperative plans and tasks as temporary artifacts to assist implementation
+4. Implement code using Test-Driven Development (TDD)
+5. Recommend integration tests and unit tests
+7. Add a verify step to enable a corrective loop
+8. Move constitution into AGENTS.md
 
 ## Workflow Identity
 
