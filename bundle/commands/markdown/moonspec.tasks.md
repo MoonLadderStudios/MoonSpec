@@ -218,8 +218,21 @@ Every task MUST strictly follow this format:
    - Each in-scope `DESIGN-REQ-*` or `DOC-REQ-*` → at least one implementation task
    - Each source design workflow or public boundary → at least one integration test task
    - Each source design rule, invariant, or edge case → at least one unit test task where applicable
+   - Explicit non-goals and constraints → guardrail tests, validation tasks, or documented scope checks when they affect implementation
 
 6. **From AGENTS.md Principles And Test Discipline**:
    - Each relevant principle conflict → a visible mitigation or scope decision in tasks.md
    - Each testing-discipline requirement → concrete unit, integration, or validation tasks
    - Repo-specific docs/source-of-truth requirements → concrete documentation or reconciliation tasks when they apply
+
+### Phase Structure
+
+- **Phase 1**: Setup (project initialization)
+- **Phase 2**: Foundational (blocking prerequisites - MUST complete before story work)
+- **Phase 3**: Story
+  - Within the story: Unit Tests → Integration Tests → Red-first confirmation → Models → Services → Endpoints/UI/CLI → Integration wiring → Story validation
+  - Unit and integration tests MUST be written and confirmed failing before implementation
+  - The phase should be a complete, independently testable vertical slice
+- **Final Phase**: Polish & Cross-Cutting Concerns
+  - Refactoring, documentation, performance, security, and additional coverage that strengthen the completed story without adding hidden scope
+  - Include a final task to run `/moonspec.verify` after all implementation and tests pass
