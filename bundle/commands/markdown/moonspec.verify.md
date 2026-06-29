@@ -141,11 +141,11 @@ This command is the final MoonSpec check. It verifies that the completed impleme
    | Scenario | Evidence | Status | Notes |
    |----------|----------|--------|-------|
 
-   ## Principles And Source Design Coverage
+   ## Story Scope, Principles, And Source Claim Coverage
 
    | Item | Evidence | Status | Notes |
    |------|----------|--------|-------|
-   | DESIGN-REQ-001 / AGENTS.md principle | [file/test/reference] | VERIFIED/PARTIAL/MISSING/CONFLICT/NO_DETERMINATION | [notes] |
+   | DOC-REQ-001 / AGENTS.md principle | [file/test/reference] | VERIFIED/PARTIAL/MISSING/CONFLICT/NO_DETERMINATION | [notes] |
 
    ## Original Request Alignment
 
@@ -161,7 +161,7 @@ This command is the final MoonSpec check. It verifies that the completed impleme
 
    ## Decision
 
-   - FULLY_IMPLEMENTED only if implementation, unit tests, integration tests, source design requirements, relevant AGENTS.md principles, and original request alignment all verify.
+   - FULLY_IMPLEMENTED only if implementation, unit tests, integration tests, in-scope source claims, relevant AGENTS.md principles, and original request alignment all verify.
    ```
 
 9. **Report completion**:
@@ -187,8 +187,10 @@ This command is the final MoonSpec check. It verifies that the completed impleme
 ## Key Rules
 
 - Verification is read-only except for normal test artifacts.
-- The original request in `spec.md` is the source of truth for final alignment.
-- `spec.md` plus relevant AGENTS.md guidance define the governing requirements.
+- `spec.md` defines the bounded one-story verification scope and preserves the original request/source packet.
+- When `spec.md` names a canonical source document, interpret the story against that document's in-scope stable claims; the canonical document remains the durable desired-state authority unless verified drift is handed off to doc reconciliation.
+- Do not require unrelated claims from a larger canonical design to verify for this story, but do not let the temporary spec silently override an in-scope canonical conflict.
+- Relevant AGENTS.md guidance defines repo principles, constraints, and test discipline for the story.
 - `plan.md` and `tasks.md` are useful context but never proof of implementation.
 - Unit tests and integration tests are both expected evidence.
 - Prefer direct, citeable repository evidence from production code, wiring, configuration, and tests.
