@@ -87,7 +87,7 @@ In issue-brief verification mode:
 3. Treat a `PARTIALLY_IMPLEMENTED` assessment as a bounded backlog: verify only the previously unmet or partially met requirements unless the issue brief explicitly requires broader validation.
 4. Treat `FULLY_IMPLEMENTED` as already verified only when no implementation step made code changes after that assessment.
 5. Inspect production code and tests directly; do not treat the assessment itself as proof that new work is complete.
-6. Do not require `spec.md`, `plan.md`, `tasks.md`, or `.specify/memory/constitution.md`.
+6. Do not require `spec.md`, `plan.md`, `tasks.md`, or a standalone constitution file.
 
 If the user provides a specific `spec.md` or feature directory, use it and derive sibling artifacts from that directory.
 

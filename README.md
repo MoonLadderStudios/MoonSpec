@@ -9,7 +9,7 @@ MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to Spec-Drive
 4. Implement code using Test-Driven Development (TDD)
 5. Recommend integration tests and unit tests
 7. Add a verify step to enable a corrective loop
-8. Move constitution into AGENTS.md
+8. Keep repo-specific workflow guidance in AGENTS.md
 
 ## Workflow Identity
 
