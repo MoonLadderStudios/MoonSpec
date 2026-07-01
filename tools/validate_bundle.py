@@ -22,6 +22,9 @@ FORBIDDEN_PATTERNS = {
     "agentkit skill prefix": re.compile(r"\bagentkit-"),
     "agentkit phase prefix": re.compile(r"\bagentkit_"),
     "specify package": re.compile(r"\bspecify-cli\b|\bspecify_cli\b"),
+    "standalone constitution path": re.compile(
+        r"\.specify[/\\]memory[/\\]constitution(?:\.md)?"
+    ),
 }
 SCRIPT_REF_PATTERN = re.compile(
     r"(?:^|[`\"'\s])(?:\.specify/)?scripts/bash/([A-Za-z0-9_.-]+\.sh)"
