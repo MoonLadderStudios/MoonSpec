@@ -25,6 +25,15 @@ FORBIDDEN_PATTERNS = {
     "standalone constitution path": re.compile(
         r"\.specify[/\\]memory[/\\]constitution(?:\.md)?"
     ),
+    "retired doc gate wording": re.compile(
+        r"factually wrong against|deliberately and correctly diverged"
+    ),
+    "retired doc defect wording": re.compile(
+        r"wrong, incomplete|incomplete or wrong"
+    ),
+    "retired story-reconcile reference": re.compile(
+        r"story-reconcile-implementation"
+    ),
 }
 SCRIPT_REF_PATTERN = re.compile(
     r"(?:^|[`\"'\s])(?:\.specify/)?scripts/bash/([A-Za-z0-9_.-]+\.sh)"
