@@ -260,8 +260,9 @@ Choose exactly one verdict:
 - `FULLY_IMPLEMENTED`: implementation, unit tests, integration tests, source design requirements, relevant AGENTS.md principles, and original request alignment all verify.
 - `ADDITIONAL_WORK_NEEDED`: concrete implementation or validation gaps remain.
 - `NO_DETERMINATION`: required evidence cannot be inspected or commands cannot be run enough to reach a defensible conclusion.
+- `BLOCKED`: the execution environment prevents trustworthy verification, such as `ENVIRONMENT_CONTAMINATED_BY_SKILL_PROJECTION` from the workspace projection preflight. Include the diagnostic, whether it is recoverable in the current runtime, and the minimum repair needed.
 
-Prefer `ADDITIONAL_WORK_NEEDED` over `NO_DETERMINATION` when a concrete missing code or test gap is visible.
+Prefer `ADDITIONAL_WORK_NEEDED` over `NO_DETERMINATION` when a concrete missing code or test gap is visible. Use `BLOCKED` only for environment failures; it says nothing about implementation completeness.
 
 When the verdict is `ADDITIONAL_WORK_NEEDED`, include a structured Remaining Work section that remediation steps can consume. Each item must identify:
 
@@ -283,7 +284,7 @@ Use this structure:
 **Feature**: [name or spec path]
 **Spec**: [absolute path]
 **Original Request Source**: spec.md `Input`
-**Verdict**: FULLY_IMPLEMENTED | ADDITIONAL_WORK_NEEDED | NO_DETERMINATION
+**Verdict**: FULLY_IMPLEMENTED | ADDITIONAL_WORK_NEEDED | NO_DETERMINATION | BLOCKED
 **Confidence**: HIGH | MEDIUM | LOW
 
 ## Test Results
