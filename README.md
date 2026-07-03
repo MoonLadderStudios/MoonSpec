@@ -11,6 +11,9 @@ MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to Spec-Drive
 7. Use the verify skill to enable a corrective loop with a quality gate
 8. Use the doc-reconcile skill when the document is impossible, unclear, or inconsistent
 9. Keep constitution-like guidance in AGENTS.md
+10. Chain all of the implementation steps with an orchestrate skill
+
+Note that for chaining steps, an orchestration tool like [MoonMind](https://github.com/MoonLadderStudios/MoonMind) is recommended because it improves context management and the resilience of failed steps.
 
 ## Workflow Identity
 
