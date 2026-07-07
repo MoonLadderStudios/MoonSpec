@@ -89,6 +89,27 @@ In issue-brief verification mode:
 5. Inspect production code and tests directly; do not treat the assessment itself as proof that new work is complete.
 6. Do not require `spec.md`, `plan.md`, `tasks.md`, or a standalone constitution file.
 
+## Controlling vs Advisory Verification
+
+Separate verification evidence into controlling and advisory classes before choosing the verdict.
+
+Controlling evidence can block `FULLY_IMPLEMENTED`:
+
+- direct production-code inspection for every in-scope requirement.
+- unit, compile, typecheck, lint, and other repo-local hermetic checks that exercise in-scope behavior and can run with the checked-out repository plus documented local dependencies.
+- hermetic integration tests when their required fixtures, services, and assets are present in the current runtime and the failure identifies a concrete in-scope implementation defect.
+- explicit AGENTS.md, issue brief, or spec `MUST` requirements that are repo-verifiable in the current runtime.
+
+Advisory evidence must be reported but must not fail verification by itself:
+
+- integration, e2e, smoke, quickstart, map-entry, UI/browser, deployment, or external-service tests that require credentials, host services, deployed environments, proprietary or binary assets, large fixtures, game/editor map assets, simulators, or other runtime inputs not available in the checkout.
+- failures whose root cause is the unavailable advisory environment, such as missing `.umap` files, absent `/Game/Maps/...` assets, unavailable services, or unsupported local tools.
+- manual-only checks, production deployment checks, or provider-specific validation unavailable to the verifier.
+
+When an advisory command is unavailable or fails for an advisory-environment reason, classify the command as `NOT RUN` when detected before execution, or as `FAIL` with a clearly marked non-blocking advisory note when discovered by running it. Record the missing asset, service, fixture, or environment condition in Test Results, Gaps, Diagnostics, or residual risk, but do not put it in Remaining Work and do not choose `ADDITIONAL_WORK_NEEDED`, `NO_DETERMINATION`, or `BLOCKED` solely for that reason.
+
+If an integration or e2e command failure reveals a concrete in-scope implementation defect that can be fixed in the repository, classify and gate on that underlying defect, not on the suite label. If the implementation, controlling tests, source claims, AGENTS.md principles, and original request alignment all verify, `FULLY_IMPLEMENTED` is allowed even when advisory integration/e2e/map smoke evidence is missing or non-blocking.
+
 If the user provides a specific `spec.md` or feature directory, use it and derive sibling artifacts from that directory.
 
 Otherwise run the prerequisite script from the repository root:
@@ -231,6 +252,7 @@ Run commands when available and safe:
 Record exact command results as `PASS`, `FAIL`, or `NOT RUN`.
 
 Use `NOT RUN` with an exact reason when a command requires unavailable credentials, missing services, unsafe side effects, unsupported local tools, or excessive environment setup.
+Use the controlling/advisory split when interpreting results. Missing map assets, game/editor content assets, external services, credentials, or other non-hermetic integration/e2e prerequisites are advisory limitations unless the command output exposes a concrete in-scope implementation defect.
 
 ## Classify Items
 
@@ -245,8 +267,8 @@ Use these statuses:
 Rules:
 
 - Do not mark the feature `FULLY_IMPLEMENTED` unless every in-scope `FR-*`, relevant AGENTS.md principle, source design requirement, and acceptance-critical behavior is `VERIFIED`.
-- Missing required unit or integration tests is a verification failure unless the spec clearly makes that test class irrelevant.
-- Missing integration coverage for acceptance scenarios, contracts, workflows, persistence, or external boundaries is a high-severity gap.
+- Missing required unit tests or repo-local hermetic checks is a verification failure unless the spec clearly makes that test class irrelevant.
+- Missing integration coverage for acceptance scenarios, contracts, workflows, persistence, or external boundaries is a high-severity gap only when that coverage is repo-local, hermetic, and controllable in the current runtime. Integration/e2e/map/deployment evidence that depends on unavailable assets or external runtime fixtures is advisory and non-blocking.
 - Separate missing implementation from missing validation when both matter.
 - Treat violated AGENTS.md `MUST` rules as blocking failures.
 - Treat original request misalignment as blocking even if later tasks are complete.
@@ -257,12 +279,13 @@ Rules:
 
 Choose exactly one verdict:
 
-- `FULLY_IMPLEMENTED`: implementation, unit tests, integration tests, source design requirements, relevant AGENTS.md principles, and original request alignment all verify.
+- `FULLY_IMPLEMENTED`: implementation, unit tests, repo-local hermetic checks, source design requirements, relevant AGENTS.md principles, and original request alignment all verify.
 - `ADDITIONAL_WORK_NEEDED`: concrete implementation or validation gaps remain.
 - `NO_DETERMINATION`: required evidence cannot be inspected or commands cannot be run enough to reach a defensible conclusion.
 - `BLOCKED`: the execution environment prevents trustworthy verification, such as `ENVIRONMENT_CONTAMINATED_BY_SKILL_PROJECTION` from the workspace projection preflight. Include the diagnostic, whether it is recoverable in the current runtime, and the minimum repair needed.
 
 Prefer `ADDITIONAL_WORK_NEEDED` over `NO_DETERMINATION` when a concrete missing code or test gap is visible. Use `BLOCKED` only for environment failures; it says nothing about implementation completeness.
+Do not choose a blocking verdict solely because advisory integration/e2e/map/deployment validation cannot run or fails due to unavailable non-repo assets, services, credentials, or tooling. Use `FULLY_IMPLEMENTED` when all controlling evidence verifies; otherwise gate only on concrete implementation or controllable verification gaps.
 
 When the verdict is `ADDITIONAL_WORK_NEEDED`, include a structured Remaining Work section that remediation steps can consume. Each item must identify:
 
@@ -271,6 +294,14 @@ When the verdict is `ADDITIONAL_WORK_NEEDED`, include a structured Remaining Wor
 - concrete remaining work
 - suggested files, commands, or evidence to inspect
 - whether the gap is recoverable in the current runtime
+
+Distinguish implementation gaps from verification gaps:
+
+- Implementation gaps mean required behavior, wiring, persistence, contracts, UI/API behavior, or configuration is absent, partial, or contradictory.
+- Verification gaps mean tests, command evidence, fixture coverage, integration evidence, or inspectable artifacts are missing or insufficient.
+- Environment gaps mean current-runtime constraints prevent a controlling repo-verifiable check and should usually map to `BLOCKED` or `NO_DETERMINATION` depending on recoverability. Environment gaps for advisory integration/e2e/map/deployment evidence are non-blocking limitations, not Remaining Work.
+
+Emit concrete `remainingWork` for every `ADDITIONAL_WORK_NEEDED` result. Each item must be bounded enough for a remediation step to act on without reinterpreting the whole report.
 
 ## Report
 
@@ -395,6 +426,6 @@ If no hooks are registered or `.specify/extensions.yml` does not exist, skip sil
 - Do not require unrelated claims from a larger canonical design to verify for this story, but do not let the temporary spec silently override an in-scope canonical conflict.
 - Relevant AGENTS.md guidance defines repo principles, constraints, and test discipline for the story.
 - `plan.md` and `tasks.md` are useful context but never proof of implementation.
-- Unit tests and integration tests are both expected evidence.
+- Unit tests and repo-local hermetic checks are controlling expected evidence. Integration/e2e/map/deployment checks are expected evidence when available, but they are advisory and non-blocking when they depend on unavailable non-repo assets, services, credentials, or tooling.
 - Prefer direct, citeable repository evidence from production code, wiring, configuration, and tests.
 - Do not mark the feature complete when required behavior is only inferred and not verified.
