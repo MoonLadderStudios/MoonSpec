@@ -92,6 +92,9 @@ This command is the final MoonSpec check. It verifies that the completed impleme
    - Run quickstart validation when `quickstart.md` exists and can be executed safely
    - Do not edit tracked files during verification. Normal disposable test artifacts are acceptable only when already ignored by the project.
    - If a command is unsafe, unavailable, or requires missing credentials/services, record it as "Not run" with the exact reason
+   - Treat unit, compile, typecheck, lint, and repo-local hermetic checks as controlling evidence.
+   - Treat integration, e2e, smoke, quickstart, map-entry, UI/browser, deployment, or external-service tests as advisory when they require unavailable credentials, services, deployed environments, proprietary/binary assets, large fixtures, game/editor map assets such as `.umap` files, simulators, or unsupported local tools.
+   - Advisory tests must be reported, but their unavailability or environment-caused failure must not fail verification by itself. If an advisory failure reveals a concrete in-scope implementation defect, gate on that underlying defect instead of the suite label.
 
 6. **Classify each verification item**:
    - Use these statuses:
@@ -101,7 +104,8 @@ This command is the final MoonSpec check. It verifies that the completed impleme
      - `CONFLICT`: implementation contradicts the spec, original request, source design, or relevant repo guidance
      - `NO_DETERMINATION`: the spec or repository evidence is too ambiguous to make a defensible call
    - Do not mark the feature complete unless every in-scope `FR-*`, relevant AGENTS.md principle, and source design requirement is `VERIFIED`
-   - Missing scenario-driven unit or integration coverage for required behavior is at least a high-severity gap
+   - Missing scenario-driven unit coverage or repo-local hermetic validation for required behavior is at least a high-severity gap
+   - Missing integration/e2e/map/deployment coverage is non-blocking when the required assets, services, credentials, or runtime fixtures are unavailable in the current checkout/runtime
    - Separate missing implementation from missing validation when both matter
 
 7. **Compare implementation to the original request**:
@@ -109,7 +113,8 @@ This command is the final MoonSpec check. It verifies that the completed impleme
    - Check whether success criteria are directly validated, indirectly supported, or unverified
    - Check whether assumptions made during specification still hold
    - Check whether integration tests cover the end-to-end behavior implied by the original request
-   - Treat missing required unit or integration tests as a verification failure unless the spec explicitly makes that class irrelevant
+   - Treat missing required unit tests or repo-local hermetic checks as a verification failure unless the spec explicitly makes that class irrelevant
+   - Do not choose a failing verdict solely because advisory integration/e2e/map/deployment validation cannot run or fails due to unavailable non-repo assets, services, credentials, or tooling. Use `FULLY_IMPLEMENTED` when all controlling evidence verifies; record advisory limitations as residual risk or non-blocking gaps.
    - Treat violated AGENTS.md `MUST` rules as blocking failures
 
 8. **Produce the final verification report**:
@@ -161,7 +166,7 @@ This command is the final MoonSpec check. It verifies that the completed impleme
 
    ## Decision
 
-   - FULLY_IMPLEMENTED only if implementation, unit tests, integration tests, in-scope source claims, relevant AGENTS.md principles, and original request alignment all verify.
+   - FULLY_IMPLEMENTED only if implementation, unit tests, repo-local hermetic checks, in-scope source claims, relevant AGENTS.md principles, and original request alignment all verify. Advisory integration/e2e/map/deployment evidence should be included when available but does not block completion when unavailable for environment or asset reasons.
    ```
 
 9. **Report completion**:
@@ -192,6 +197,6 @@ This command is the final MoonSpec check. It verifies that the completed impleme
 - Do not require unrelated claims from a larger canonical design to verify for this story, but do not let the temporary spec silently override an in-scope canonical conflict.
 - Relevant AGENTS.md guidance defines repo principles, constraints, and test discipline for the story.
 - `plan.md` and `tasks.md` are useful context but never proof of implementation.
-- Unit tests and integration tests are both expected evidence.
+- Unit tests and repo-local hermetic checks are controlling expected evidence. Integration/e2e/map/deployment checks are expected evidence when available, but they are advisory and non-blocking when they depend on unavailable non-repo assets, services, credentials, or tooling.
 - Prefer direct, citeable repository evidence from production code, wiring, configuration, and tests.
 - Do not mark the feature complete when required behavior is only inferred and not verified.
