@@ -1,0 +1,40 @@
+{
+  "issue_provider": "jira",
+  "issue_ref": "MM-1135",
+  "issue_url": null,
+  "verdict": "PARTIALLY_IMPLEMENTED",
+  "branch": "fetch-jira-issue-mm-1135-through-the-det-bcec24de",
+  "base_ref": "main",
+  "mode": "main/trunk",
+  "summary": "The current branch is not ahead of main, so assessment used main/trunk mode. Visible issue scope is only partially implemented: the repo already has adjacent source-packet, requirement-status, TDD task, and issue-brief verification concepts, but it does not contain a moonspec-assess skill/command/export/projection, source acceptance matrix artifact protocol, orchestrate assessment step, or the resolved canonical design document docs/MoonSpecAcceptanceAssessment.md. No recent merge history for Jira MM-1135 was found; a GitHub PR #1135 merge exists but is unrelated by title. Trusted Jira recovery was unavailable in this runtime, so description and preset_brief retain residual truncation markers and hidden content was not assessed as a requirement.",
+  "requirements": [
+    {
+      "description": "Add a provider-neutral MoonSpec acceptance assessment workflow: source request -> moonspec-specify creates spec.md + source acceptance matrix -> moonspec-assess checks current repo against that matrix -> moonspec-plan / moonspec-tasks plan only missing or partial rows -> moonspec-implement consumes the bounded backlog -> moonspec-verify re-checks the same acceptance matrix before completion.",
+      "status": "partially_met"
+    },
+    {
+      "description": "Keep preset inputs simple and do not add new optional inputs to moonspec-orchestrate.",
+      "status": "met"
+    },
+    {
+      "description": "Use a provider-neutral artifact protocol where the assessment skill accepts acceptance criteria from any source: moonspec-specify, a hand-authored matrix, a Jira brief, a GitHub issue brief, or a design document.",
+      "status": "not_met"
+    },
+    {
+      "description": "Avoid MoonMind coupling in MoonSpec artifacts and skill instructions, except as examples in tests.",
+      "status": "partially_met"
+    },
+    {
+      "description": "Keep the source request controlling so generated spec.md, plan.md, and tasks.md do not silently narrow or override the original source acceptance criteria.",
+      "status": "partially_met"
+    },
+    {
+      "description": "Assessment produces bounded backlog so implementation consumes missing or partial acceptance rows.",
+      "status": "partially_met"
+    },
+    {
+      "description": "Provide the canonical source design path docs/MoonSpecAcceptanceAssessment.md resolved from the trusted issue brief.",
+      "status": "not_met"
+    }
+  ]
+}

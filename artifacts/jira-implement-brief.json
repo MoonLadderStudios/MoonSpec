@@ -1,0 +1,33 @@
+{
+  "issue_provider": "jira",
+  "issue_ref": "MM-1135",
+  "issue_url": null,
+  "title": "Add provider-neutral MoonSpec acceptance assessment workflow and source acceptance matrix",
+  "description": "Background\nMoonSpec Orchestrate currently coordinates the full MoonSpec lifecycle from a single-story feature request through specify, plan, tasks, align, implement, verify, and optional doc reconciliation. This works well for bounded stories, but recent remediation-flow implementation results showed that a complex vertical story can be unintentionally narrowed during specification/planning into a subsystem-centered slice.\nThe concrete example was the Create-page remediation flow: the source issue required an end-to-end operator flow spanning dashboard Remediate actions, Create-page draft intake, normal /api/executions submit, backend remediation context artifacts, checkpoint-branch repair, Omnigent v1 guardrails, dashboard remediation panels, compatibility behavior, and frontend/backend/API/contract tests. A MoonSpec-driven implementation produced useful backend/Omnigent work but did not preserve enough of the original end-to-end acceptance surface through implementation and verification.\nMoonSpec should remain provider-neutral and usable outside MoonMind. It should not add Jira-specific concepts or require extra preset inputs. Instead, the normal MoonSpec flow should preserve the original source request as a structured acceptance matrix and use a reusable assessment skill to determine what is already implemented, what remains, and what bounded backlog downstream implementation should consume.\nGoal\nAdd a provider-neutral MoonSpec acceptance assessment workflow:\nsource request\n-> moonspec-specify creates spec.md + source acceptance matrix\n-> moonspec-assess checks current repo against that matrix\n-> moonspec-plan / moonspec-tasks plan only missing or partial rows\n-> moonspec-implement consumes the bounded backlog\n-> moonspec-verify re-checks the same acceptance matrix before completion\nThis should make MoonSpec more reliable for complex single-story vertical flows without coupling it to Jira, GitHub Issues, MoonMind, or any specific host product.\nDesign principles\nKeep preset inputs simple. Do not add new optional inputs to moonspec-orchestrate.Provider-neutral artifact protocol. The assessment skill must accept acceptance criteria from any source: moonspec-specify, a hand-authored matrix, a Jira brief, a GitHub issue brief, or a design document.No MoonMind coupling. MoonSpec artifacts and skill instructions must not reference MoonMind-specific file paths, APIs, presets, or infrastructure except as examples in tests.Source request remains controlling. Generated spec.md, plan.md, and tasks.md are downstream artifacts. They must not silently narrow or override the original source acceptance criteria.Assessment produces bounded backlog. Implementation should consume missing or partial acceptance rows rather th...[truncated]",
+  "acceptance_criteria": null,
+  "labels": [],
+  "preset_brief": "MM-1135: Add provider-neutral MoonSpec acceptance assessment workflow and source acceptance matrix\n\nJira issue title\nAdd provider-neutral MoonSpec acceptance assessment workflow and source acceptance matrix\nJira issue description\nBackground\nMoonSpec Orchestrate currently coordinates the full MoonSpec lifecycle from a single-story feature request through specify, plan, tasks, align, implement, verify, and optional doc reconciliation. This works well for bounded stories, but recent remediation-flow implementation results showed that a complex vertical story can be unintentionally narrowed during specification/planning into a subsystem-centered slice.\nThe concrete example was the Create-page remediation flow: the source issue required an end-to-end operator flow spanning dashboard Remediate actions, Create-page draft intake, normal /api/executions submit, backend remediation context artifacts, checkpoint-branch repair, Omnigent v1 guardrails, dashboard remediation panels, compatibility behavior, and frontend/backend/API/contract tests. A MoonSpec-driven implementation produced useful backend/Omnigent work but did not preserve enough of the original end-to-end acceptance surface through implementation and verification.\nMoonSpec should remain provider-neutral and usable outside MoonMind. It should not add Jira-specific concepts or require extra preset inputs. Instead, the normal MoonSpec flow should preserve the original source request as a structured acceptance matrix and use a reusable assessment skill to determine what is already implemented, what remains, and what bounded backlog downstream implementation should consume.\nGoal\nAdd a provider-neutral MoonSpec acceptance assessment workflow:\nsource request\n-> moonspec-specify creates spec.md + source acceptance matrix\n-> moonspec-assess checks current repo against that matrix\n-> moonspec-plan / moonspec-tasks plan only missing or partial rows\n-> moonspec-implement consumes the bounded backlog\n-> moonspec-verify re-checks the same acceptance matrix before completion\nThis should make MoonSpec more reliable for complex single-story vertical flows without coupling it to Jira, GitHub Issues, MoonMind, or any specific host product.\nDesign principles\nKeep preset inputs simple. Do not add new optional inputs to moonspec-orchestrate.Provider-neutral artifact protocol. The assessment skill must accept acceptance criteria from any source: moonspec-specify, a hand-authored matrix, a Jira brief, a GitHub issue brief, or a design document.No MoonMind coupling. MoonSpec artifacts and skill instructions must not reference MoonMind-specific file paths, APIs, presets, or infrastructure except as examples in tests.Source request remains controlling. Generated spec.md, plan.md, and tasks.md are downstream artifacts. They must not silently narrow or override the original source acceptance criteria.Assessment produces bounded backlog. Implementation should consume missing or partial acceptance rows rather th...[truncated]",
+  "constraints": "",
+  "source_resolution": {
+    "candidatePaths": [
+      {
+        "exists": null,
+        "path": "docs/MoonSpecAcceptanceAssessment.md",
+        "sourceField": "jira.description",
+        "sourceFields": [
+          "jira.description",
+          "jira.presetBrief"
+        ]
+      }
+    ],
+    "reason": "found one canonical document path in jira.description; repository-root validation not run",
+    "selectedPath": "docs/MoonSpecAcceptanceAssessment.md",
+    "status": "resolved"
+  },
+  "trusted_source": "moonmind.jira.get_issue",
+  "truncated": true,
+  "truncated_fields": [
+    "description",
+    "preset_brief"
+  ]
+}

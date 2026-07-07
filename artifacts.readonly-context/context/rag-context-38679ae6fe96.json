@@ -1,0 +1,30 @@
+{
+  "context_text": "### Retrieved Context\n1. tests/test_common_script.py (score: 1.000, trust: canonical)\n    line 21: def test_get_current_branch_reads_feature_json_before_git(tmp_path: Path) -> None:",
+  "items": [
+    {
+      "score": 1.0,
+      "source": "tests/test_common_script.py",
+      "text": "line 21: def test_get_current_branch_reads_feature_json_before_git(tmp_path: Path) -> None:",
+      "offset_start": null,
+      "offset_end": null,
+      "trust_class": "canonical",
+      "chunk_hash": null,
+      "payload": {
+        "line": 21,
+        "mode": "local_fallback"
+      }
+    }
+  ],
+  "filters": {
+    "mode": "local_fallback"
+  },
+  "budgets": {},
+  "usage": {
+    "matches": 1
+  },
+  "transport": "local_fallback",
+  "retrieved_at": "2026-07-07T19:18:13Z",
+  "telemetry_id": "local-fallback",
+  "initiation_mode": "automatic",
+  "truncated": false
+}
