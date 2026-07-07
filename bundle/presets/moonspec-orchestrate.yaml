@@ -26,6 +26,11 @@ inputs:
     type: textarea
     required: false
     default: ""
+  - name: run_verify
+    label: Run Verification
+    type: boolean
+    required: false
+    default: true
 steps:
   - title: Create or select MoonSpec
     instructions: |-
@@ -81,6 +86,7 @@ steps:
       requiredCapabilities:
         - git
   - title: Verify completion
+    enabled: "{{ inputs.run_verify }}"
     instructions: |-
       Run moonspec-verify as the final read-only gate unless an up-to-date verification report already covers the current code and artifacts.
       If the verdict is ADDITIONAL_WORK_NEEDED, use the report as the remaining-work list and run at most two bounded implementation and verification cycles.
@@ -92,6 +98,7 @@ steps:
       id: moonspec-verify
       args: {}
   - title: Reconcile declarative docs
+    enabled: "{{ inputs.run_verify }}"
     instructions: |-
       Run moonspec-doc-reconcile only when the final moonspec-verify verdict is FULLY_IMPLEMENTED and at least one canonical source candidate exists: spec.md records a canonical source document, the breakdown sourceReference.path points under docs/, or the orchestration step provides a source design path under docs/{% if inputs.source_design_path %} (source design path: {{ inputs.source_design_path }}){% endif %}.
       If no canonical source candidate exists, report no_update_required and finish.
