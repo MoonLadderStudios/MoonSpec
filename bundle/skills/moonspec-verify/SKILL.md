@@ -23,6 +23,10 @@ This skill answers:
 - Which stable canonical source claims are covered by implementation behavior, test evidence, artifact evidence, or a clear gap reason?
 - Did verified implementation evidence contradict claims in the canonical source document, indicating doc drift that reconciliation must handle?
 
+## Source Acceptance Matrix Verification
+
+When `artifacts/moonspec/source-acceptance.json` or `artifacts/moonspec/acceptance-assessment.json` exists, verify every repo-verifiable source row. Do not choose `FULLY_IMPLEMENTED` unless every required repo-verifiable source row is satisfied.
+
 ## Inputs
 
 - Treat the user's text as optional verification focus.

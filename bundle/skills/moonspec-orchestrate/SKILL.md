@@ -15,6 +15,7 @@ Use this skill to coordinate the MoonSpec workflow end to end.
 Orchestrate downstream MoonSpec skills instead of reimplementing their detailed workflows:
 
 - `moonspec-specify`: create one-story specs from a single feature request.
+- `moonspec-assess`: assess source acceptance evidence into a bounded backlog.
 - `moonspec-plan`: create implementation planning artifacts.
 - `moonspec-tasks`: create a TDD-first executable task breakdown.
 - `moonspec-align`: analyze and remediate artifact drift before implementation.
@@ -39,6 +40,7 @@ Default intent is `runtime`: production code plus tests must be delivered. Use `
 - Before starting downstream stages, validate that the input is already exactly one independently testable story or an active feature directory with an existing one-story `spec.md`.
 - If the input is a broad design, names multiple stories/features, asks to split or implement all stories, or otherwise cannot be bounded to one independently testable story without selection, stop immediately and report that a higher-level workflow must route it through `moonspec-breakdown` or another upstream selector first.
 - Single-story requests go through `moonspec-specify`.
+- Run `moonspec-assess` after `moonspec-specify` when source acceptance evidence exists. Preserve the original source acceptance matrix, the bounded backlog, and any note that a single story may span multiple implementation surfaces.
 - TDD is the default strategy.
 - Unit tests and integration tests are both expected.
 - The original request or source design preserved in `spec.md` `**Input**` is the final alignment source, interpreted against the canonical source document per `docs/Workflows/MoonSpecDocumentModel.md`. When a derived artifact conflicts with its canonical source document, the canonical document wins unless verified evidence shows the document itself is impossible, unclear, or inconsistent — then the conflict goes to doc reconciliation, never silent override.
