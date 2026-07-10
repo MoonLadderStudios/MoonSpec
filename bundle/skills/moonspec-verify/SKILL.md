@@ -25,7 +25,7 @@ This skill answers:
 
 ## Source Acceptance Matrix Verification
 
-When `artifacts/moonspec/source-acceptance.json` or `artifacts/moonspec/acceptance-assessment.json` exists, verify every repo-verifiable source row. Do not choose `FULLY_IMPLEMENTED` unless every required repo-verifiable source row is satisfied.
+When `artifacts/moonspec/source-acceptance.json` or `artifacts/moonspec/acceptance-assessment.json` exists and its `featureId` matches the active feature or source-direct baseline, verify every repo-verifiable source row. Do not choose `FULLY_IMPLEMENTED` unless every required repo-verifiable source row is satisfied.
 
 ## Inputs
 
@@ -84,7 +84,7 @@ Resolve the verification baseline in this order:
 3. An explicitly provided `spec.md` or feature directory.
 4. An active feature directory discovered from repository context.
 
-The first usable source defines the bounded scope. Later sources are supplemental context and traceability only. When a canonical declarative document and a derived artifact conflict, follow `docs/Workflows/MoonSpecDocumentModel.md`: the canonical document wins unless verified evidence requires reconciliation.
+The first usable source defines the bounded scope. Later sources are supplemental context and traceability only. Workflow-stage prose such as "run the final gate" is operational guidance, not source-direct authority; do not let it outrank an explicit feature directory, `spec.md`, original request, issue brief, or declarative source document. When a canonical declarative document and a derived artifact conflict, follow `docs/Workflows/MoonSpecDocumentModel.md`: the canonical document wins unless verified evidence requires reconciliation.
 
 In source-direct verification mode:
 
