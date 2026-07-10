@@ -17,6 +17,7 @@ def test_manifest_exports_expected_skill_ids() -> None:
     assert skills == {
         "moonspec-breakdown",
         "moonspec-specify",
+        "moonspec-assess",
         "moonspec-plan",
         "moonspec-tasks",
         "moonspec-align",

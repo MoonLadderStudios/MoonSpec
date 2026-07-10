@@ -18,6 +18,10 @@ exports:
       path: skills/moonspec-specify/SKILL.md
       wrappers:
         openai: skills/moonspec-specify/agents/openai.yaml
+    - id: moonspec-assess
+      path: skills/moonspec-assess/SKILL.md
+      wrappers:
+        openai: skills/moonspec-assess/agents/openai.yaml
     - id: moonspec-plan
       path: skills/moonspec-plan/SKILL.md
       wrappers:
@@ -74,6 +78,11 @@ exports:
       markdown: commands/markdown/moonspec.specify.md
       gemini: commands/gemini/moonspec.specify.toml
       skill: moonspec-specify
+    - id: moonspec.assess
+      slashCommand: /moonspec.assess
+      markdown: commands/markdown/moonspec.assess.md
+      gemini: commands/gemini/moonspec.assess.toml
+      skill: moonspec-assess
     - id: moonspec.plan
       slashCommand: /moonspec.plan
       markdown: commands/markdown/moonspec.plan.md
@@ -131,6 +140,8 @@ exports:
       path: docs/BundleIntegration.md
     - id: authoring-guide
       path: docs/AuthoringGuide.md
+    - id: acceptance-assessment
+      path: docs/MoonSpecAcceptanceAssessment.md
 
 projections:
   moonmind:

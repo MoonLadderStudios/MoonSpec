@@ -104,6 +104,10 @@ Read:
 - `quickstart.md` when present: validation commands and end-to-end scenarios.
 - `specs/breakdown.md` when present: source design coverage and cross-spec dependency context.
 
+## Source Acceptance Coverage
+
+When `artifacts/moonspec/acceptance-assessment.json` exists and its `featureId` matches the active feature, every missing, partial, conflict, or required-unverified row must map to tests and implementation or verification tasks. Each negative constraint row must be preserved as a test, verification task, or explicit non-repo-verifiable exclusion.
+
 Build a traceability inventory before writing tasks:
 
 - One row per `FR-*`.
