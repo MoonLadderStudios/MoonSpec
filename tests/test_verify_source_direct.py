@@ -13,8 +13,11 @@ def test_verify_skill_accepts_source_direct_baselines_without_feature_artifacts(
     assert "In source-direct verification mode" in text
     assert "Do not require a MoonSpec feature directory" in text
     assert "their absence is never by itself a verification gap" in text
-    assert "--json --include-tasks" in text
+    assert "--json --paths-only" in text
     assert "--require-tasks" not in text
+    assert "rebuild every controlling" in text
+    assert "classification from the current repository head" in text
+    assert "results from a path the repository forbids" in text
 
 
 def test_verify_command_does_not_preflight_require_feature_artifacts() -> None:

@@ -25,12 +25,13 @@ This skill answers:
 
 ## Source Acceptance Matrix Verification
 
-When `artifacts/moonspec/source-acceptance.json` or `artifacts/moonspec/acceptance-assessment.json` exists and its `featureId` matches the active feature or source-direct baseline, verify every repo-verifiable source row. Do not choose `FULLY_IMPLEMENTED` unless every required repo-verifiable source row is satisfied.
+When `artifacts/moonspec/source-acceptance.json` or `artifacts/moonspec/acceptance-assessment.json` exists and its `featureId`, source, feature directory, issue reference, or requirement IDs match the selected verification baseline, verify every repo-verifiable source row for that baseline. Do not choose `FULLY_IMPLEMENTED` unless every required repo-verifiable source row for the selected baseline is satisfied. In source-direct verification mode, ignore stale or unrelated acceptance artifacts whose source metadata does not match the selected source.
 
 ## Inputs
 
 - Treat the user's instructions as a valid verification baseline, not merely optional focus.
 - Treat a referenced declarative document as a valid verification baseline. Read it directly and verify its in-scope desired-state claims without requiring a derived MoonSpec feature packet.
+- Do not treat ad hoc verifier guidance, such as "focus on API tests", workflow meta-instructions, or review-process instructions, as the verification baseline when an issue brief, `spec.md`, feature directory, original implementation request, or declarative source is available. Use that guidance only to prioritize evidence gathering within the real baseline.
 - In issue-brief verification mode, use the provided issue brief artifact, issue reference, acceptance criteria, and assessment artifact as the verification baseline without requiring a MoonSpec feature directory, `spec.md`, `plan.md`, or `tasks.md`.
 - When an active feature directory or `spec.md` exists, use it as optional derived context and traceability. `plan.md` and `tasks.md` are also optional process context; their absence is never by itself a verification gap.
 - Read `AGENTS.md` when present for project principles, repo constraints, and test discipline.
@@ -79,12 +80,12 @@ If no hooks are registered or `.specify/extensions.yml` does not exist, skip sil
 
 Resolve the verification baseline in this order:
 
-1. Explicit original instructions or an explicitly referenced declarative document in the current request or workflow step.
+1. Explicit original implementation instructions or an explicitly referenced declarative document in the current request or workflow step.
 2. Issue-brief verification inputs.
 3. An explicitly provided `spec.md` or feature directory.
-4. An active feature directory discovered from repository context.
+4. An active feature directory discovered from repository context by running `.specify/scripts/bash/check-prerequisites.sh --json --paths-only`.
 
-The first usable source defines the bounded scope. Later sources are supplemental context and traceability only. Workflow-stage prose such as "run the final gate" is operational guidance, not source-direct authority; do not let it outrank an explicit feature directory, `spec.md`, original request, issue brief, or declarative source document. When a canonical declarative document and a derived artifact conflict, follow `docs/Workflows/MoonSpecDocumentModel.md`: the canonical document wins unless verified evidence requires reconciliation.
+The first usable source defines the bounded scope. Later sources are supplemental context and traceability only. Workflow-stage prose such as "run the final gate", ad hoc verifier guidance such as "focus on API tests", or other process instructions are operational guidance, not source-direct authority; do not let them outrank an explicit feature directory, `spec.md`, original request, issue brief, declarative source document, or discovered active-feature source. When a canonical declarative document and a derived artifact conflict, follow `docs/Workflows/MoonSpecDocumentModel.md`: the canonical document wins unless verified evidence requires reconciliation.
 
 In source-direct verification mode:
 
@@ -110,6 +111,26 @@ In issue-brief verification mode:
 5. Inspect production code and tests directly; do not treat the assessment itself as proof that new work is complete.
 6. Do not require `spec.md`, `plan.md`, `tasks.md`, or a standalone constitution file.
 
+When verification follows a remediation attempt, rebuild every controlling
+classification from the current repository head. A previous verifier report,
+its `remainingWork`, and the original assessment are hypotheses and process
+context only; they are not current implementation evidence. For every prior
+`PARTIAL`, `MISSING`, or remaining-work item, inspect the current production
+code and tests and replace the old status, evidence, line numbers, and notes
+with current findings. Never copy or incrementally edit a previous verifier
+JSON report as the new report. If the current head differs from the head named
+by the assessment or previous report, no gap may remain solely because the old
+artifact said it existed or because the candidate is not on the base branch.
+
+Verify the candidate state at the boundary where this skill is invoked. In a
+pre-publication verification step, an uncommitted workspace, an absent pull
+request, an open issue, and an unmerged candidate are expected inputs, not
+implementation or documentation gaps. Do not require downstream commit, pull
+request, merge, deployment, or issue-closure evidence before returning
+`FULLY_IMPLEMENTED`. Gate on those outcomes only when the selected baseline
+explicitly makes publication itself part of this verification step and the
+workflow has already supplied the resulting publication evidence.
+
 ## Controlling vs Advisory Verification
 
 Separate verification evidence into controlling and advisory classes before choosing the verdict.
@@ -133,21 +154,21 @@ If an integration or e2e command failure reveals a concrete in-scope implementat
 
 If the user provides a specific `spec.md` or feature directory, use it and discover sibling artifacts from that directory when present.
 
-Only when no explicit source-direct, issue-brief, `spec.md`, or feature-directory baseline is available, run the prerequisite script from the repository root:
+To discover any active feature directory or optional derived context, run the prerequisite script from the repository root in paths-only mode. This discovery is non-blocking and must not replace an already selected source-direct, issue-brief, `spec.md`, or feature-directory baseline:
 
 ```bash
-.specify/scripts/bash/check-prerequisites.sh --json --include-tasks
+.specify/scripts/bash/check-prerequisites.sh --json --paths-only
 ```
 
-If it succeeds, parse `FEATURE_DIR` and `AVAILABLE_DOCS`, then discover:
+If it succeeds, parse `FEATURE_DIR`, then discover whichever sibling artifacts exist:
 
 - `SPEC = FEATURE_DIR/spec.md`
 - `PLAN = FEATURE_DIR/plan.md`
 - `TASKS = FEATURE_DIR/tasks.md`
-- optional docs from `AVAILABLE_DOCS`
+- optional docs such as `research.md`, `data-model.md`, `contracts/`, `quickstart.md`, and `checklists/`
 - `REPO_GUIDANCE = AGENTS.md` when present
 
-If discovery fails because no active feature exists, continue with any usable original instructions or declarative source already available. Derived-artifact discovery failure is not itself a verification failure.
+If discovery fails because no active feature exists, the feature directory is absent, or derived artifacts such as `plan.md` or `tasks.md` are missing, continue with any usable selected baseline already available. Derived-artifact discovery failure is not itself a verification failure.
 
 If shell arguments contain single quotes, use shell-safe escaping such as `'I'\''m Groot'`, or double quotes when possible.
 
@@ -281,6 +302,17 @@ Run commands when available and safe:
 - Build, lint, or typecheck commands when they are part of the documented validation path or needed to resolve ambiguity.
 
 Record exact command results as `PASS`, `FAIL`, or `NOT RUN`.
+
+Follow the repository's managed-agent test boundary when `AGENTS.md` defines
+one. Before running tests, inspect that guidance for the documented managed-run
+signal and required delegated test command. When the current workspace meets
+that signal, confirm the required command is available and route every covered
+test through it. Do not run an equivalent host-local test command or install a
+test runner into the agent host; results from a path the repository forbids are
+invalid verification evidence. A missing host-local runner does not make a
+test unavailable while the documented delegated capability exists. If that
+capability is missing or rejects the job, preserve its explicit evidence and
+classify the environment according to `AGENTS.md`.
 
 Use `NOT RUN` with an exact reason when a command requires unavailable credentials, missing services, unsafe side effects, unsupported local tools, or excessive environment setup.
 Use the controlling/advisory split when interpreting results. Missing map assets, game/editor content assets, external services, credentials, or other non-hermetic integration/e2e prerequisites are advisory limitations unless the command output exposes a concrete in-scope implementation defect.
