@@ -37,9 +37,10 @@ Keep templates runtime-neutral where possible. If a template references a MoonSp
 
 ## Add Or Update Scripts
 
-Scripts live under `bundle/scripts/bash/`.
+Shared Bash scripts live under `bundle/scripts/bash/`. A Skill may ship a portable
+Python helper beside `SKILL.md` under its `scripts/` directory.
 
-Scripts must be executable in ordinary Bash environments and should resolve paths relative to the consumer repository root. Register exported scripts in the bundle manifest.
+Scripts must run with their declared interpreter (`bash` or `python3`) and should resolve paths relative to the consumer repository root or accept an explicit root. Register exported scripts in the bundle manifest. Skill helpers must not import consumer-specific runtime packages.
 
 ## Update Projection Recipes
 

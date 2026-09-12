@@ -120,6 +120,8 @@ exports:
       skill: moonspec-orchestrate
 
   scripts:
+    - id: acceptance
+      path: skills/moonspec-verify/scripts/acceptance.py
     - id: common
       path: scripts/bash/common.sh
     - id: create-new-feature
@@ -134,6 +136,8 @@ exports:
       path: scripts/bash/validate-implementation-scope.sh
 
   docs:
+    - id: acceptance-policy
+      path: skills/moonspec-verify/references/acceptance-policy.md
     - id: document-model
       path: docs/MoonSpecDocumentModel.md
     - id: bundle-integration
