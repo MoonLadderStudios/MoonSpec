@@ -122,3 +122,132 @@ def test_explicit_target_preserves_detached_dirty_checkout(verified_candidate):
     assert target["subject"]["contentDigest"] != current["subject"]["contentDigest"]
     assert git(repo, "diff") == before
     assert git(repo, "branch", "--show-current") == ""
+
+
+@pytest.mark.parametrize(
+    "refs", ["artifact:check", {}, None, [], [""], [" \t"], [17], [["check"]]]
+)
+def test_reuse_cli_rejects_malformed_evidence_refs(verified_candidate, tmp_path, refs):
+    repo, current, report = verified_candidate
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "verified candidate")
+    git(repo, "update-ref", "refs/heads/release", "HEAD")
+    current.update(acceptance.capture(repo, "example/repo", "release"))
+    assert acceptance.reuse(report, current)["completionEligible"]
+    report["validatedRefs"]["acceptance"]["evidence"][0]["evidenceRefs"] = refs
+    report_path = tmp_path / "report.json"
+    current_path = tmp_path / "current.json"
+    report_path.write_text(json.dumps(report))
+    current_path.write_text(json.dumps(current))
+    decision = json.loads(
+        subprocess.check_output(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "reuse",
+                "--report",
+                str(report_path),
+                "--current",
+                str(current_path),
+            ],
+            text=True,
+        )
+    )
+    assert not decision["reusable"] and not decision["completionEligible"]
+    assert decision["reasons"]
+
+
+@pytest.mark.parametrize(
+    "ids", [[], [""], [" \t"], ["AC-1", ""], ["AC-1", "AC-1"], [17], "AC-1"]
+)
+def test_scope_and_reuse_reject_invalid_mandatory_ids(verified_candidate, ids):
+    _, current, report = verified_candidate
+    with pytest.raises(ValueError, match="mandatory requirement IDs"):
+        acceptance.scope(b"Print 42", "example/repo#1", ids, complete=True)
+    current["scope"]["requirementIds"] = ids
+    report["validatedRefs"]["acceptance"]["scope"] = copy.deepcopy(current["scope"])
+    report["validatedRefs"]["acceptance"]["evidence"] = [
+        {"requirementId": requirement_id, "evidenceRefs": ["artifact:check"]}
+        for requirement_id in ids
+    ]
+    decision = acceptance.reuse(report, current)
+    assert not decision["reusable"] and not decision["completionEligible"]
+    assert decision["reasons"]
+
+
+@pytest.mark.parametrize("requirement", ["", " \t"])
+def test_capture_cli_rejects_blank_mandatory_id(
+    verified_candidate, tmp_path, requirement
+):
+    repo, _, _ = verified_candidate
+    source = tmp_path / "issue.txt"
+    source.write_text("Print 42")
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "capture",
+            "--repo",
+            str(repo),
+            "--repository",
+            "example/repo",
+            "--target",
+            "release",
+            "--source",
+            str(source),
+            "--source-ref",
+            "example/repo#1",
+            "--requirement",
+            requirement,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "mandatory requirement IDs" in result.stderr
+    assert not result.stdout
+
+
+@pytest.mark.parametrize("registered", [False, True])
+@pytest.mark.parametrize("change", ["unstaged", "staged", "untracked"])
+def test_capture_rejects_dirty_gitlinks_without_changing_staging(
+    verified_candidate, registered, change
+):
+    repo, _, _ = verified_candidate
+    nested = repo / "embedded repo"
+    nested.mkdir()
+    git(nested, "init", "-b", "main")
+    git(nested, "config", "user.email", "fixture@example.test")
+    git(nested, "config", "user.name", "Acceptance fixture")
+    source = nested / "nested.py"
+    source.write_text("print(1)\n")
+    git(nested, "add", ".")
+    git(nested, "commit", "-m", "nested baseline")
+    if registered:
+        git(repo, "submodule", "add", str(nested), nested.name)
+        git(repo, "submodule", "absorbgitdirs")
+        git(repo, "config", "submodule.embedded repo.ignore", "all")
+    clean = acceptance.capture(repo, "example/repo", "release")
+    git(repo, "add", "app.py")
+    if change == "untracked":
+        (nested / "new.py").write_text("print(2)\n")
+    else:
+        source.write_text("print(2)\n")
+        if change == "staged":
+            git(nested, "add", ".")
+    parent_index = git(repo, "ls-files", "--stage")
+    nested_index = git(nested, "ls-files", "--stage")
+    nested_status = git(nested, "status", "--porcelain", "--untracked-files=all")
+    objects_before = git(repo, "count-objects", "-v")
+    with pytest.raises(ValueError, match="content-bound workspace checkpoint"):
+        acceptance.capture(repo, "example/repo", "release")
+    assert git(repo, "ls-files", "--stage") == parent_index
+    assert git(nested, "ls-files", "--stage") == nested_index
+    assert (
+        git(nested, "status", "--porcelain", "--untracked-files=all") == nested_status
+    )
+    assert git(repo, "count-objects", "-v") == objects_before
+    git(nested, "add", ".")
+    git(nested, "commit", "-m", "nested verified change")
+    changed = acceptance.capture(repo, "example/repo", "release")
+    assert changed["subject"]["contentDigest"] != clean["subject"]["contentDigest"]
