@@ -41,6 +41,22 @@ The `moonmind` projection maps:
 
 MoonMind owns the projection wrapper, preset seeding behavior, runtime scheduler behavior, database migrations, UI/API display behavior, and MoonMind-specific tests.
 
+## Verification Consumption
+
+Load verification instructions, policy, and helper from the same resolved Skill
+directory. The helper's `identity` command describes the actual installed files,
+including consumer projection headers, without assuming upstream was loaded.
+Record this diagnostic identity through the host's existing report/provenance
+facility rather than introducing a second registry or compatibility gate.
+
+Requested structured reports use the producer preflight in the Skill's acceptance
+policy. The host still validates its envelope and owns report-repair scheduling,
+authorized CI/workstation dispatch, artifact retrieval, PR continuation, and
+publication. A portable helper pass is not a host gate verdict or evidence that
+external tests ran. Test these host boundaries with a malformed response and a
+candidate whose required evidence arrives after publication, preserving the same
+candidate/PR and truthful intermediate non-passing result.
+
 ## Versioning
 
 Bundle revisions are consumed by pinned commit. A consumer bump should include:
@@ -49,3 +65,8 @@ Bundle revisions are consumed by pinned commit. A consumer bump should include:
 2. Re-projected files.
 3. A passing projection check.
 4. Consumer tests selected by the changed asset surface.
+
+Refresh the consumer's active Skill snapshots when adopting a bundle revision and
+exercise verification through its normal resolver. A submodule update or passing
+projection check alone does not prove a running worker loaded the new instructions.
+Keep deployment activation and consumer end-to-end tests with the consumer owner.
