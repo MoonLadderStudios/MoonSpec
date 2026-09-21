@@ -179,9 +179,12 @@ def _reuse(report: dict, current: dict, *, now: datetime | None = None) -> dict:
     ):
         reasons.append("mandatory requirement evidence missing")
     target = current.get("completionTarget", {})
+    evidence_target = evidence.get("completionTarget", {})
     if (
         not target.get("ref")
-        or evidence.get("completionTarget", {}).get("ref") != target["ref"]
+        or evidence_target.get("ref") != target["ref"]
+        or not evidence_target.get("revision")
+        or not evidence_target.get("contentDigest")
     ):
         reasons.append("completion policy changed or missing")
     freshness = evidence.get("freshness", {})
@@ -209,6 +212,20 @@ def _reuse(report: dict, current: dict, *, now: datetime | None = None) -> dict:
         ),
         "reasons": reasons,
     }
+
+
+def _valid_remaining_work(work: object) -> bool:
+    """Require actionable handoff fields, not just a nonempty mapping."""
+    if not isinstance(work, list) or not work:
+        return False
+    for item in work:
+        if not isinstance(item, dict):
+            return False
+        for field in ("requirement", "gapType", "remainingWork"):
+            value = item.get(field)
+            if not isinstance(value, str) or not value.strip():
+                return False
+    return True
 
 
 def validate_report(report: object, current: dict | None = None) -> dict:
@@ -248,10 +265,9 @@ def validate_report(report: object, current: dict | None = None) -> dict:
     elif isinstance(verdict, str) and verdict in actions:
         work = report.get("remainingWork")
         reference = report.get("remainingWorkRef")
-        if not (
-            isinstance(work, list) and work
-            and all(isinstance(item, dict) and item for item in work)
-        ) and not (isinstance(reference, str) and reference.strip()):
+        if not _valid_remaining_work(work) and not (
+            isinstance(reference, str) and reference.strip()
+        ):
             errors.append("non-passing report requires remainingWork or a remainingWorkRef")
     return {"valid": not errors, "errors": errors}
 

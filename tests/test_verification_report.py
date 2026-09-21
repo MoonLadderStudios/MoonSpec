@@ -188,6 +188,30 @@ def test_late_evidence_cannot_change_selected_scope_or_candidate(completed, chan
     assert not acceptance.validate_report(report, current)["valid"]
 
 
+@pytest.mark.parametrize("change", ["revision", "contentDigest", "ref-only"])
+def test_success_binding_requires_recorded_completion_target_identity(completed, change):
+    report, current = completed
+    binding = report["validatedRefs"]["acceptance"]
+    if change == "revision":
+        del binding["completionTarget"]["revision"]
+    elif change == "contentDigest":
+        del binding["completionTarget"]["contentDigest"]
+    else:
+        binding["completionTarget"] = {"ref": current["completionTarget"]["ref"]}
+    assert not acceptance.validate_report(report, current)["valid"]
+    assert not acceptance.reuse(report, current)["reusable"]
+
+
+@pytest.mark.parametrize("work", [[{"x": 1}], [{"gapType": "implementation"}],
+                                   [{"requirement": "AC-1", "gapType": " "}],
+                                   [{"requirement": "AC-1", "gapType": "verification",
+                                     "remainingWork": "  "}]])
+def test_nonpassing_handoff_rejects_unactionable_remaining_work_items(work):
+    report = pending()
+    report["remainingWork"] = work
+    assert not acceptance.validate_report(report)["valid"]
+
+
 @pytest.mark.parametrize("text", [
     '{"verdict":',
     '{"verdict":"FULLY_IMPLEMENTED","verdict":"NO_DETERMINATION"}',
