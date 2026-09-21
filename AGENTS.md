@@ -30,6 +30,16 @@ Use the canonical names listed above. Do not add aliases, compatibility wrappers
 
 MoonSpec specs, plans, and tasks describe one independently testable story. Plans identify unit and integration test strategy separately. Tasks put tests and red-first checks before implementation unless the user explicitly chooses otherwise.
 
+### Automation-Completable Acceptance
+
+Write bounded stories with executable acceptance paths using existing test,
+container, CI, and artifact-review owners. Do not make manual human review the
+default way to finish an implementation. Missing local tools, malformed reports,
+and exhausted attempts require truthful, actionable automated handoffs, not a
+fabricated pass or a generic operator-review request. Preserve explicitly required
+human authority and separately scoped release work. The canonical verification
+acceptance policy owns the detailed evidence and continuation rules.
+
 ### Disposable Execution Artifacts
 
 `specs/` packets, `plan.md`, `tasks.md`, `research.md`, and quickstarts are execution scaffolding. Durable product, architecture, and workflow knowledge belongs in long-lived docs or agent guidance.
