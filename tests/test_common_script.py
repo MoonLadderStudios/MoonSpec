@@ -86,10 +86,16 @@ def test_feature_assignments_round_trip_without_evaluating_values(tmp_path: Path
     ("check-prerequisites.sh", ["--json", "--paths-only"]),
     ("check-prerequisites.sh", ["--json", "--include-tasks"]),
 ])
-@pytest.mark.parametrize("branch", ["001-normal", "001-line\nbreak\tend", '001-quote"back\\slash', "001-tail ", "001-tail\t"])
-def test_script_json_outputs_escape_path_values(tmp_path, script, args, branch):
+@pytest.mark.parametrize("branch", [
+    "001-normal", "001-line\nbreak\tend", '001-quote"back\\slash',
+    "001-tail ", "001-tail\t", "001-unicode-é-月-🚀",
+    "001-controls-" + "".join(chr(code) for code in range(1, 32)),
+])
+@pytest.mark.parametrize("without_python", [False, True])
+def test_script_json_outputs_escape_path_values(tmp_path, script, args, branch, without_python):
     import json
     import os
+    import shutil
 
     repo = tmp_path / 'repo "quote"\nnew\tline'
     repo.mkdir()
@@ -98,9 +104,20 @@ def test_script_json_outputs_escape_path_values(tmp_path, script, args, branch):
     feature.mkdir(parents=True)
     for name in ("plan.md", "tasks.md", "research.md"):
         (feature / name).write_text("# Existing evidence\n")
+    runtime_env = {**os.environ, "SPECIFY_FEATURE": branch}
+    if without_python:
+        # Projected workflows declare shell/Git, not a Python interpreter.
+        runtime = tmp_path / "shell-runtime"
+        runtime.mkdir()
+        for command in ("bash", "git", "dirname", "basename", "mkdir", "cp", "touch", "ls", "sed", "head"):
+            executable = shutil.which(command)
+            assert executable is not None, command
+            (runtime / command).symlink_to(executable)
+        runtime_env["PATH"] = str(runtime)
+        assert shutil.which("python3", path=str(runtime)) is None
     result = subprocess.run(
-        ["bash", str(COMMON_SH.parent / script), *args],
-        cwd=repo, env={**os.environ, "SPECIFY_FEATURE": branch},
+        [shutil.which("bash"), str(COMMON_SH.parent / script), *args],
+        cwd=repo, env=runtime_env,
         capture_output=True, text=True, check=False,
     )
     assert result.returncode == 0, result.stderr

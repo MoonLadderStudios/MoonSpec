@@ -353,7 +353,7 @@ create_new_agent_file() {
     
     log_info "Creating new agent context file from template..."
     
-    # New guidance keeps the writable temporary-file mode, not template modes.
+    # Keep the temporary file writable during generation, without template modes.
     if ! cp "$TEMPLATE_FILE" "$temp_file"; then
         log_error "Failed to copy template file"
         return 1
@@ -431,6 +431,14 @@ create_new_agent_file() {
     
     # Clean up backup files
     rm -f "$temp_file.bak" "$temp_file.bak2" "$temp_file.bak3" "$temp_file.bak4"
+
+    # Publish with the same permissions as a normal file created by this caller.
+    local file_mode
+    printf -v file_mode '%03o' "$((0666 & ~$(umask)))" || return 1
+    if ! chmod "$file_mode" "$temp_file"; then
+        log_error "Failed to apply consumer file-creation permissions"
+        return 1
+    fi
     
     return 0
 }
@@ -627,6 +635,10 @@ update_agent_file() {
     fi
     
     target_file=$(resolve_agent_file "$target_file") || return 1
+    if [[ -e "$target_file" && ! -f "$target_file" ]]; then
+        log_error "Unsupported non-regular agent context target: $target_file"
+        return 1
+    fi
     if [[ "$UPDATED_AGENT_FILES" == *$'\n'"$target_file"$'\n'* ]]; then
         log_info "Skipping $agent_name context file already updated: $target_file"
         return 0
@@ -768,73 +780,73 @@ update_all_existing_agents() {
     local found_agent=false
 
     # Update logical AGENTS first so shared aliases retain its protected identity.
-    if [[ -f "$AGENTS_FILE" ]]; then
+    if [[ -e "$AGENTS_FILE" || -L "$AGENTS_FILE" ]]; then
         update_agent_file "$AGENTS_FILE" "Codex/opencode" || return 1
         found_agent=true
     fi
     
     # Check each possible agent file and update if it exists
-    if [[ -f "$CLAUDE_FILE" ]]; then
+    if [[ -e "$CLAUDE_FILE" || -L "$CLAUDE_FILE" ]]; then
         update_agent_file "$CLAUDE_FILE" "Claude Code" || return 1
         found_agent=true
     fi
     
-    if [[ -f "$GEMINI_FILE" ]]; then
+    if [[ -e "$GEMINI_FILE" || -L "$GEMINI_FILE" ]]; then
         update_agent_file "$GEMINI_FILE" "Gemini CLI" || return 1
         found_agent=true
     fi
     
-    if [[ -f "$COPILOT_FILE" ]]; then
+    if [[ -e "$COPILOT_FILE" || -L "$COPILOT_FILE" ]]; then
         update_agent_file "$COPILOT_FILE" "GitHub Copilot" || return 1
         found_agent=true
     fi
     
-    if [[ -f "$CURSOR_FILE" ]]; then
+    if [[ -e "$CURSOR_FILE" || -L "$CURSOR_FILE" ]]; then
         update_agent_file "$CURSOR_FILE" "Cursor IDE" || return 1
         found_agent=true
     fi
     
-    if [[ -f "$QWEN_FILE" ]]; then
+    if [[ -e "$QWEN_FILE" || -L "$QWEN_FILE" ]]; then
         update_agent_file "$QWEN_FILE" "Qwen Code" || return 1
         found_agent=true
     fi
     
-    if [[ -f "$WINDSURF_FILE" ]]; then
+    if [[ -e "$WINDSURF_FILE" || -L "$WINDSURF_FILE" ]]; then
         update_agent_file "$WINDSURF_FILE" "Windsurf" || return 1
         found_agent=true
     fi
     
-    if [[ -f "$KILOCODE_FILE" ]]; then
+    if [[ -e "$KILOCODE_FILE" || -L "$KILOCODE_FILE" ]]; then
         update_agent_file "$KILOCODE_FILE" "Kilo Code" || return 1
         found_agent=true
     fi
 
-    if [[ -f "$AUGGIE_FILE" ]]; then
+    if [[ -e "$AUGGIE_FILE" || -L "$AUGGIE_FILE" ]]; then
         update_agent_file "$AUGGIE_FILE" "Auggie CLI" || return 1
         found_agent=true
     fi
     
-    if [[ -f "$ROO_FILE" ]]; then
+    if [[ -e "$ROO_FILE" || -L "$ROO_FILE" ]]; then
         update_agent_file "$ROO_FILE" "Roo Code" || return 1
         found_agent=true
     fi
 
-    if [[ -f "$CODEBUDDY_FILE" ]]; then
+    if [[ -e "$CODEBUDDY_FILE" || -L "$CODEBUDDY_FILE" ]]; then
         update_agent_file "$CODEBUDDY_FILE" "CodeBuddy CLI" || return 1
         found_agent=true
     fi
 
-    if [[ -f "$SHAI_FILE" ]]; then
+    if [[ -e "$SHAI_FILE" || -L "$SHAI_FILE" ]]; then
         update_agent_file "$SHAI_FILE" "SHAI" || return 1
         found_agent=true
     fi
 
-    if [[ -f "$Q_FILE" ]]; then
+    if [[ -e "$Q_FILE" || -L "$Q_FILE" ]]; then
         update_agent_file "$Q_FILE" "Amazon Q Developer CLI" || return 1
         found_agent=true
     fi
     
-    if [[ -f "$BOB_FILE" ]]; then
+    if [[ -e "$BOB_FILE" || -L "$BOB_FILE" ]]; then
         update_agent_file "$BOB_FILE" "IBM Bob" || return 1
         found_agent=true
     fi

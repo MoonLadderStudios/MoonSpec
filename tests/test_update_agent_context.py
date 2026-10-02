@@ -58,7 +58,8 @@ def _consumer_repo(tmp_path: Path) -> Path:
 
 
 def _run(
-    repo: Path, *args: str, extra_env: dict[str, str] | None = None
+    repo: Path, *args: str, extra_env: dict[str, str] | None = None,
+    creation_umask: int = -1,
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["bash", ".specify/scripts/bash/update-agent-context.sh", *args],
@@ -68,6 +69,7 @@ def _run(
         text=True,
         capture_output=True,
         timeout=5,
+        umask=creation_umask,
     )
 
 
@@ -294,17 +296,23 @@ def test_foreign_ownership_cannot_be_silently_replaced(
     assert not list(repo.glob(".agent_update.*"))
 
 
-def test_readonly_template_creates_writable_guidance(tmp_path: Path) -> None:
+@pytest.mark.parametrize("template_mode", [0o444, 0o644])
+@pytest.mark.parametrize(
+    "creation_umask,expected_mode", [(0o022, 0o644), (0o002, 0o664), (0o077, 0o600)]
+)
+def test_new_guidance_uses_consumer_umask(
+    tmp_path: Path, template_mode: int, creation_umask: int, expected_mode: int
+) -> None:
     repo = _consumer_repo(tmp_path)
     (repo / "CLAUDE.md").unlink()
-    (repo / ".specify/templates/agent-file-template.md").chmod(0o444)
+    (repo / ".specify/templates/agent-file-template.md").chmod(template_mode)
 
-    result = _run(repo, "--write", "claude")
+    result = _run(repo, "--write", "claude", creation_umask=creation_umask)
 
     assert result.returncode == 0, result.stderr
-    assert (repo / "CLAUDE.md").stat().st_mode & 0o200
+    assert (repo / "CLAUDE.md").stat().st_mode & 0o777 == expected_mode
     assert "Rust 1.80" in (repo / "CLAUDE.md").read_text(encoding="utf-8")
-    followup = _run(repo, "--write", "claude")
+    followup = _run(repo, "--write", "claude", creation_umask=creation_umask)
     assert followup.returncode == 0, followup.stderr
 
 
@@ -329,3 +337,33 @@ def test_unavailable_ownership_evidence_preserves_guidance(
     assert "ownership" in result.stderr.lower()
     assert (repo / "GEMINI.md").read_text(encoding="utf-8") == GEMINI_TEXT
     assert not list(repo.glob(".agent_update.*"))
+
+
+@pytest.mark.parametrize("target_kind", ["directory", "symlink-directory", "fifo", "symlink-fifo"])
+@pytest.mark.parametrize("agent", ["gemini", None])
+def test_nonregular_guidance_targets_are_rejected_without_artifacts(
+    tmp_path: Path, target_kind: str, agent: str | None
+) -> None:
+    repo = _consumer_repo(tmp_path)
+    target = repo / "GEMINI.md"
+    target.unlink()
+    resolved_target = repo / "unsupported-target" if target_kind.startswith("symlink-") else target
+    if target_kind.endswith("directory"):
+        resolved_target.mkdir()
+    else:
+        os.mkfifo(resolved_target)
+    if target_kind.startswith("symlink-"):
+        target.symlink_to(resolved_target.name)
+    before = resolved_target.stat()
+
+    result = _run(repo, "--write", *([agent] if agent else []))
+
+    assert result.returncode == 1
+    assert "non-regular" in result.stderr.lower()
+    after = resolved_target.stat()
+    assert (after.st_mode, after.st_ino) == (before.st_mode, before.st_ino)
+    if target_kind.startswith("symlink-"):
+        assert target.is_symlink()
+    if target_kind.endswith("directory"):
+        assert not list(resolved_target.iterdir())
+    assert not list(repo.rglob(".agent_update.*"))
