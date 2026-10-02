@@ -78,3 +78,34 @@ def test_feature_assignments_round_trip_without_evaluating_values(tmp_path: Path
     expected = [str(repo), branch, feature_dir]
     expected += [f"{feature_dir}/{name}" for name in ("spec.md", "plan.md", "tasks.md", "research.md", "data-model.md", "quickstart.md", "contracts")]
     assert result.stdout.split("\0") == expected + [""]
+
+
+@pytest.mark.parametrize("script,args", [
+    ("setup-plan.sh", ["--json"]),
+    ("check-prerequisites.sh", ["--json", "--paths-only"]),
+    ("check-prerequisites.sh", ["--json", "--include-tasks"]),
+])
+@pytest.mark.parametrize("branch", ["001-normal", "001-line\nbreak\tend", '001-quote"back\\slash'])
+def test_script_json_outputs_escape_path_values(tmp_path, script, args, branch):
+    import json
+    import os
+
+    repo = tmp_path / 'repo "quote"\nnew\tline'
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    feature = repo / "specs" / branch
+    feature.mkdir(parents=True)
+    for name in ("plan.md", "tasks.md", "research.md"):
+        (feature / name).write_text("# Existing evidence\n")
+    result = subprocess.run(
+        ["bash", str(COMMON_SH.parent / script), *args],
+        cwd=repo, env={**os.environ, "SPECIFY_FEATURE": branch},
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload.get("FEATURE_DIR", payload.get("SPECS_DIR")) == str(feature)
+    if "BRANCH" in payload:
+        assert payload["BRANCH"] == branch
+    if "AVAILABLE_DOCS" in payload:
+        assert payload["AVAILABLE_DOCS"] == ["research.md", "tasks.md"]
