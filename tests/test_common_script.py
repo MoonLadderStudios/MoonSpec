@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import subprocess
+
+import pytest
 from pathlib import Path
 
 
@@ -48,3 +50,31 @@ def test_check_feature_branch_rejects_non_feature_names(tmp_path: Path) -> None:
     assert result.returncode == 1
     assert "001-feature-name" in result.stderr
     assert "20260319-143022-feature-name" in result.stderr
+
+
+@pytest.mark.parametrize("directory", ["repo", "repo's quoted workspace"])
+@pytest.mark.parametrize("branch", [
+    "001-normal",
+    "001-spaces and 'quotes' and $dollars",
+    "001-x'; : > marker; #",
+    "001-newline\nand-tab\tvalue",
+])
+@pytest.mark.parametrize("invocation", ['eval "$(get_feature_paths)"', 'eval $(get_feature_paths)'])
+def test_feature_assignments_round_trip_without_evaluating_values(tmp_path: Path, directory: str, branch: str, invocation: str) -> None:
+    import os
+
+    # Both repository paths and branch selectors can contain shell syntax.
+    repo = tmp_path / directory
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    result = subprocess.run(
+        ["bash", "-c", 'source "$1"; ' + invocation + '; printf "%s\\0" "$REPO_ROOT" "$CURRENT_BRANCH" "$FEATURE_DIR" "$FEATURE_SPEC" "$IMPL_PLAN" "$TASKS" "$RESEARCH" "$DATA_MODEL" "$QUICKSTART" "$CONTRACTS_DIR"', "bash", str(COMMON_SH)],
+        cwd=repo, env={**os.environ, "SPECIFY_FEATURE": branch},
+        capture_output=True, text=True, check=False,
+    )
+    assert not (repo / "marker").exists(), "branch data was executed as shell syntax"
+    assert result.returncode == 0, result.stderr
+    feature_dir = str(repo / "specs" / branch)
+    expected = [str(repo), branch, feature_dir]
+    expected += [f"{feature_dir}/{name}" for name in ("spec.md", "plan.md", "tasks.md", "research.md", "data-model.md", "quickstart.md", "contracts")]
+    assert result.stdout.split("\0") == expected + [""]
