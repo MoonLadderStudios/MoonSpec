@@ -58,7 +58,7 @@ SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
 # Get all paths and variables from common functions
-eval $(get_feature_paths)
+eval "$(get_feature_paths)"
 
 NEW_PLAN="$IMPL_PLAN"  # Alias for compatibility with existing code
 WRITE_AUTHORIZED=false
@@ -100,6 +100,7 @@ TEMPLATE_FILE="$REPO_ROOT/.specify/templates/agent-file-template.md"
 
 # Resolved agent files already updated in this run
 UPDATED_AGENT_FILES=""
+AGENT_UPDATE_TEMP_FILE=""
 
 # Global variables for parsed plan data
 NEW_LANG=""
@@ -130,6 +131,11 @@ log_warning() {
 # Cleanup function for temporary files
 cleanup() {
     local exit_code=$?
+    if [[ -n "$AGENT_UPDATE_TEMP_FILE" ]]; then
+        rm -f -- "$AGENT_UPDATE_TEMP_FILE" "$AGENT_UPDATE_TEMP_FILE.bak" \
+            "$AGENT_UPDATE_TEMP_FILE.bak2" "$AGENT_UPDATE_TEMP_FILE.bak3" \
+            "$AGENT_UPDATE_TEMP_FILE.bak4"
+    fi
     rm -f /tmp/agent_update_*_$$
     rm -f /tmp/manual_additions_$$
     exit $exit_code
@@ -292,9 +298,18 @@ get_language_conventions() {
 resolve_agent_file() {
     local path="$1"
     local link
+    local symlink_hops=0
 
     while [[ -L "$path" ]]; do
-        link=$(readlink "$path")
+        ((symlink_hops += 1))
+        if ((symlink_hops > 40)); then
+            log_error "Agent-file symlink cycle or chain deeper than 40 links: $1"
+            return 1
+        fi
+        if ! link=$(readlink "$path"); then
+            log_error "Failed to read agent-file symlink: $path"
+            return 1
+        fi
         if [[ "$link" == /* ]]; then
             path="$link"
         else
@@ -314,7 +329,9 @@ is_manual_additions_start() {
 
 agent_file_accepts_plan_history() {
     local target_file="$1"
-    [[ "$(basename "$target_file")" != "AGENTS.md" ]]
+    local logical_target_file="${2:-$target_file}"
+    [[ "$(basename "$logical_target_file")" != "AGENTS.md" ]] && \
+        [[ "$(basename "$target_file")" != "AGENTS.md" ]]
 }
 
 create_new_agent_file() {
@@ -322,6 +339,7 @@ create_new_agent_file() {
     local temp_file="$2"
     local project_name="$3"
     local current_date="$4"
+    local logical_target_file="${5:-$target_file}"
     
     if [[ ! -f "$TEMPLATE_FILE" ]]; then
         log_error "Template not found at $TEMPLATE_FILE"
@@ -335,7 +353,7 @@ create_new_agent_file() {
     
     log_info "Creating new agent context file from template..."
     
-    if ! cp "$TEMPLATE_FILE" "$temp_file"; then
+    if ! cp -p "$TEMPLATE_FILE" "$temp_file"; then
         log_error "Failed to copy template file"
         return 1
     fi
@@ -399,15 +417,15 @@ create_new_agent_file() {
     
     # Convert \n sequences to actual newlines
     newline=$(printf '\n')
-    sed -i.bak2 "s/\\\\n/${newline}/g" "$temp_file"
+    sed -i.bak2 "s/\\\\n/${newline}/g" "$temp_file" || return 1
 
-    if ! agent_file_accepts_plan_history "$target_file"; then
+    if ! agent_file_accepts_plan_history "$target_file" "$logical_target_file"; then
         sed -i.bak3 '/^## Active Technologies$/,/^## Project Structure$/{
             /^## Project Structure$/!d
-        }' "$temp_file"
+        }' "$temp_file" || return 1
         sed -i.bak4 '/^## Recent Changes$/,/^<!-- MANUAL ADDITIONS START -->$/{
             /^<!-- MANUAL ADDITIONS START -->$/!d
-        }' "$temp_file"
+        }' "$temp_file" || return 1
     fi
     
     # Clean up backup files
@@ -422,15 +440,23 @@ create_new_agent_file() {
 update_existing_agent_file() {
     local target_file="$1"
     local current_date="$2"
+    local logical_target_file="${3:-$target_file}"
     
     log_info "Updating existing agent context file..."
     
     # Use a single temporary file for atomic update
     local temp_file
-    temp_file=$(mktemp) || {
+    temp_file=$(mktemp "$(dirname "$target_file")/.agent_update.XXXXXX") || {
         log_error "Failed to create temporary file"
         return 1
     }
+    AGENT_UPDATE_TEMP_FILE="$temp_file"
+    if ! cp -p "$target_file" "$temp_file" || ! : > "$temp_file"; then
+        log_error "Failed to prepare target metadata for atomic update"
+        rm -f -- "$temp_file"
+        AGENT_UPDATE_TEMP_FILE=""
+        return 1
+    fi
     
     # Process the file in one pass
     local tech_stack
@@ -438,7 +464,7 @@ update_existing_agent_file() {
     local new_tech_entries=()
     local new_change_entry=""
     local accepts_plan_history=false
-    if agent_file_accepts_plan_history "$target_file"; then
+    if agent_file_accepts_plan_history "$target_file" "$logical_target_file"; then
         accepts_plan_history=true
     fi
     
@@ -461,6 +487,7 @@ update_existing_agent_file() {
     if [[ ${#new_tech_entries[@]} -eq 0 ]] && [[ -z "$new_change_entry" ]]; then
         log_info "No new plan context for $target_file"
         rm -f "$temp_file"
+        AGENT_UPDATE_TEMP_FILE=""
         return 0
     fi
 
@@ -487,7 +514,7 @@ update_existing_agent_file() {
     while IFS= read -r line || [[ -n "$line" ]]; do
         # Handle Active Technologies section
         if [[ "$line" == "## Active Technologies" ]]; then
-            echo "$line" >> "$temp_file"
+            echo "$line" >> "$temp_file" || return 1
             in_tech_section=true
             in_changes_section=false
             continue
@@ -495,38 +522,38 @@ update_existing_agent_file() {
             # Add new tech entries before closing the section, then let the
             # following handlers process the line that closed it
             if [[ $tech_entries_added == false ]] && [[ ${#new_tech_entries[@]} -gt 0 ]]; then
-                printf '%s\n' "${new_tech_entries[@]}" >> "$temp_file"
+                printf '%s\n' "${new_tech_entries[@]}" >> "$temp_file" || return 1
                 tech_entries_added=true
             fi
             in_tech_section=false
         elif [[ $in_tech_section == true ]] && [[ -z "$line" ]]; then
             # Add new tech entries before empty line in tech section
             if [[ $tech_entries_added == false ]] && [[ ${#new_tech_entries[@]} -gt 0 ]]; then
-                printf '%s\n' "${new_tech_entries[@]}" >> "$temp_file"
+                printf '%s\n' "${new_tech_entries[@]}" >> "$temp_file" || return 1
                 tech_entries_added=true
             fi
-            echo "$line" >> "$temp_file"
+            echo "$line" >> "$temp_file" || return 1
             continue
         fi
         
         # Handle Recent Changes section
         if [[ "$line" == "## Recent Changes" ]]; then
-            echo "$line" >> "$temp_file"
+            echo "$line" >> "$temp_file" || return 1
             # Add new change entry right after the heading
             if [[ -n "$new_change_entry" ]]; then
-                echo "$new_change_entry" >> "$temp_file"
+                echo "$new_change_entry" >> "$temp_file" || return 1
             fi
             in_changes_section=true
             changes_entries_added=true
             continue
         elif [[ $in_changes_section == true ]] && { [[ "$line" =~ ^##[[:space:]] ]] || is_manual_additions_start "$line"; }; then
-            echo "$line" >> "$temp_file"
+            echo "$line" >> "$temp_file" || return 1
             in_changes_section=false
             continue
         elif [[ $in_changes_section == true ]] && [[ "$line" == "- "* ]]; then
             # Keep only first 2 existing changes
             if [[ $existing_changes_count -lt 2 ]]; then
-                echo "$line" >> "$temp_file"
+                echo "$line" >> "$temp_file" || return 1
                 ((existing_changes_count++))
             fi
             continue
@@ -534,40 +561,41 @@ update_existing_agent_file() {
         
         # Update timestamp
         if [[ "$line" =~ \*\*Last\ updated\*\*:.*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ]]; then
-            echo "$line" | sed "s/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/$current_date/" >> "$temp_file"
+            echo "$line" | sed "s/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/$current_date/" >> "$temp_file" || return 1
         else
-            echo "$line" >> "$temp_file"
+            echo "$line" >> "$temp_file" || return 1
         fi
     done < "$target_file"
     
     # Post-loop check: if we're still in the Active Technologies section and haven't added new entries
     if [[ $in_tech_section == true ]] && [[ $tech_entries_added == false ]] && [[ ${#new_tech_entries[@]} -gt 0 ]]; then
-        printf '%s\n' "${new_tech_entries[@]}" >> "$temp_file"
+        printf '%s\n' "${new_tech_entries[@]}" >> "$temp_file" || return 1
         tech_entries_added=true
     fi
     
     # If sections don't exist, add them at the end of the file
     if [[ $has_active_technologies -eq 0 ]] && [[ ${#new_tech_entries[@]} -gt 0 ]]; then
-        echo "" >> "$temp_file"
-        echo "## Active Technologies" >> "$temp_file"
-        printf '%s\n' "${new_tech_entries[@]}" >> "$temp_file"
+        echo "" >> "$temp_file" || return 1
+        echo "## Active Technologies" >> "$temp_file" || return 1
+        printf '%s\n' "${new_tech_entries[@]}" >> "$temp_file" || return 1
         tech_entries_added=true
     fi
     
     if [[ $has_recent_changes -eq 0 ]] && [[ -n "$new_change_entry" ]]; then
-        echo "" >> "$temp_file"
-        echo "## Recent Changes" >> "$temp_file"
-        echo "$new_change_entry" >> "$temp_file"
+        echo "" >> "$temp_file" || return 1
+        echo "## Recent Changes" >> "$temp_file" || return 1
+        echo "$new_change_entry" >> "$temp_file" || return 1
         changes_entries_added=true
     fi
     
-    # Rewrite in place so the target keeps its mode
-    if ! cat "$temp_file" > "$target_file"; then
+    # Replace only after generation succeeds, keeping the target metadata.
+    if ! mv -f "$temp_file" "$target_file"; then
         log_error "Failed to update target file"
         rm -f "$temp_file"
         return 1
     fi
     rm -f "$temp_file"
+    AGENT_UPDATE_TEMP_FILE=""
     
     return 0
 }
@@ -578,13 +606,14 @@ update_existing_agent_file() {
 update_agent_file() {
     local target_file="$1"
     local agent_name="$2"
+    local logical_target_file="$target_file"
     
     if [[ -z "$target_file" ]] || [[ -z "$agent_name" ]]; then
         log_error "update_agent_file requires target_file and agent_name parameters"
         return 1
     fi
     
-    target_file=$(resolve_agent_file "$target_file")
+    target_file=$(resolve_agent_file "$target_file") || return 1
     if [[ "$UPDATED_AGENT_FILES" == *$'\n'"$target_file"$'\n'* ]]; then
         log_info "Skipping $agent_name context file already updated: $target_file"
         return 0
@@ -611,14 +640,16 @@ update_agent_file() {
     if [[ ! -f "$target_file" ]]; then
         # Create new file from template
         local temp_file
-        temp_file=$(mktemp) || {
+        temp_file=$(mktemp "$target_dir/.agent_update.XXXXXX") || {
             log_error "Failed to create temporary file"
             return 1
         }
+        AGENT_UPDATE_TEMP_FILE="$temp_file"
         
-        if create_new_agent_file "$target_file" "$temp_file" "$project_name" "$current_date"; then
-            if cat "$temp_file" > "$target_file"; then
+        if create_new_agent_file "$target_file" "$temp_file" "$project_name" "$current_date" "$logical_target_file"; then
+            if mv -f "$temp_file" "$target_file"; then
                 rm -f "$temp_file"
+                AGENT_UPDATE_TEMP_FILE=""
                 log_success "Created new $agent_name context file"
             else
                 log_error "Failed to move temporary file to $target_file"
@@ -628,6 +659,7 @@ update_agent_file() {
         else
             log_error "Failed to create new agent file"
             rm -f "$temp_file"
+            AGENT_UPDATE_TEMP_FILE=""
             return 1
         fi
     else
@@ -642,10 +674,12 @@ update_agent_file() {
             return 1
         fi
         
-        if update_existing_agent_file "$target_file" "$current_date"; then
+        if update_existing_agent_file "$target_file" "$current_date" "$logical_target_file"; then
             log_success "Updated existing $agent_name context file"
         else
             log_error "Failed to update existing agent file"
+            rm -f -- "$AGENT_UPDATE_TEMP_FILE"
+            AGENT_UPDATE_TEMP_FILE=""
             return 1
         fi
     fi
@@ -719,82 +753,83 @@ update_specific_agent() {
 
 update_all_existing_agents() {
     local found_agent=false
+
+    # Update logical AGENTS first so shared aliases retain its protected identity.
+    if [[ -f "$AGENTS_FILE" ]]; then
+        update_agent_file "$AGENTS_FILE" "Codex/opencode" || return 1
+        found_agent=true
+    fi
     
     # Check each possible agent file and update if it exists
     if [[ -f "$CLAUDE_FILE" ]]; then
-        update_agent_file "$CLAUDE_FILE" "Claude Code"
+        update_agent_file "$CLAUDE_FILE" "Claude Code" || return 1
         found_agent=true
     fi
     
     if [[ -f "$GEMINI_FILE" ]]; then
-        update_agent_file "$GEMINI_FILE" "Gemini CLI"
+        update_agent_file "$GEMINI_FILE" "Gemini CLI" || return 1
         found_agent=true
     fi
     
     if [[ -f "$COPILOT_FILE" ]]; then
-        update_agent_file "$COPILOT_FILE" "GitHub Copilot"
+        update_agent_file "$COPILOT_FILE" "GitHub Copilot" || return 1
         found_agent=true
     fi
     
     if [[ -f "$CURSOR_FILE" ]]; then
-        update_agent_file "$CURSOR_FILE" "Cursor IDE"
+        update_agent_file "$CURSOR_FILE" "Cursor IDE" || return 1
         found_agent=true
     fi
     
     if [[ -f "$QWEN_FILE" ]]; then
-        update_agent_file "$QWEN_FILE" "Qwen Code"
-        found_agent=true
-    fi
-    
-    if [[ -f "$AGENTS_FILE" ]]; then
-        update_agent_file "$AGENTS_FILE" "Codex/opencode"
+        update_agent_file "$QWEN_FILE" "Qwen Code" || return 1
         found_agent=true
     fi
     
     if [[ -f "$WINDSURF_FILE" ]]; then
-        update_agent_file "$WINDSURF_FILE" "Windsurf"
+        update_agent_file "$WINDSURF_FILE" "Windsurf" || return 1
         found_agent=true
     fi
     
     if [[ -f "$KILOCODE_FILE" ]]; then
-        update_agent_file "$KILOCODE_FILE" "Kilo Code"
+        update_agent_file "$KILOCODE_FILE" "Kilo Code" || return 1
         found_agent=true
     fi
 
     if [[ -f "$AUGGIE_FILE" ]]; then
-        update_agent_file "$AUGGIE_FILE" "Auggie CLI"
+        update_agent_file "$AUGGIE_FILE" "Auggie CLI" || return 1
         found_agent=true
     fi
     
     if [[ -f "$ROO_FILE" ]]; then
-        update_agent_file "$ROO_FILE" "Roo Code"
+        update_agent_file "$ROO_FILE" "Roo Code" || return 1
         found_agent=true
     fi
 
     if [[ -f "$CODEBUDDY_FILE" ]]; then
-        update_agent_file "$CODEBUDDY_FILE" "CodeBuddy CLI"
+        update_agent_file "$CODEBUDDY_FILE" "CodeBuddy CLI" || return 1
         found_agent=true
     fi
 
     if [[ -f "$SHAI_FILE" ]]; then
-        update_agent_file "$SHAI_FILE" "SHAI"
+        update_agent_file "$SHAI_FILE" "SHAI" || return 1
         found_agent=true
     fi
 
     if [[ -f "$Q_FILE" ]]; then
-        update_agent_file "$Q_FILE" "Amazon Q Developer CLI"
+        update_agent_file "$Q_FILE" "Amazon Q Developer CLI" || return 1
         found_agent=true
     fi
     
     if [[ -f "$BOB_FILE" ]]; then
-        update_agent_file "$BOB_FILE" "IBM Bob"
+        update_agent_file "$BOB_FILE" "IBM Bob" || return 1
         found_agent=true
     fi
     
     # If no agent files exist, create a default Claude file
     if [[ "$found_agent" == false ]]; then
         log_info "No existing agent files found, creating default Claude file..."
-        update_agent_file "$CLAUDE_FILE" "Claude Code"
+        update_agent_file "$CLAUDE_FILE" "Claude Code" || return 1
     fi
 }
 print_summary() {

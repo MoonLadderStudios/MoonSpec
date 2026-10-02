@@ -58,9 +58,10 @@ def test_check_feature_branch_rejects_non_feature_names(tmp_path: Path) -> None:
     "001-spaces and 'quotes' and $dollars",
     "001-x'; : > marker; #",
     "001-newline\nand-tab\tvalue",
+    "001-tail ",
+    "001-tail\t",
 ])
-@pytest.mark.parametrize("invocation", ['eval "$(get_feature_paths)"', 'eval $(get_feature_paths)'])
-def test_feature_assignments_round_trip_without_evaluating_values(tmp_path: Path, directory: str, branch: str, invocation: str) -> None:
+def test_feature_assignments_round_trip_without_evaluating_values(tmp_path: Path, directory: str, branch: str) -> None:
     import os
 
     # Both repository paths and branch selectors can contain shell syntax.
@@ -68,14 +69,14 @@ def test_feature_assignments_round_trip_without_evaluating_values(tmp_path: Path
     repo.mkdir()
     subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
     result = subprocess.run(
-        ["bash", "-c", 'source "$1"; ' + invocation + '; printf "%s\\0" "$REPO_ROOT" "$CURRENT_BRANCH" "$FEATURE_DIR" "$FEATURE_SPEC" "$IMPL_PLAN" "$TASKS" "$RESEARCH" "$DATA_MODEL" "$QUICKSTART" "$CONTRACTS_DIR"', "bash", str(COMMON_SH)],
+        ["bash", "-c", 'source "$1"; eval "$(get_feature_paths)"; printf "%s\\0" "$REPO_ROOT" "$CURRENT_BRANCH" "$HAS_GIT" "$FEATURE_DIR" "$FEATURE_SPEC" "$IMPL_PLAN" "$TASKS" "$RESEARCH" "$DATA_MODEL" "$QUICKSTART" "$CONTRACTS_DIR"', "bash", str(COMMON_SH)],
         cwd=repo, env={**os.environ, "SPECIFY_FEATURE": branch},
         capture_output=True, text=True, check=False,
     )
     assert not (repo / "marker").exists(), "branch data was executed as shell syntax"
     assert result.returncode == 0, result.stderr
     feature_dir = str(repo / "specs" / branch)
-    expected = [str(repo), branch, feature_dir]
+    expected = [str(repo), branch, "true", feature_dir]
     expected += [f"{feature_dir}/{name}" for name in ("spec.md", "plan.md", "tasks.md", "research.md", "data-model.md", "quickstart.md", "contracts")]
     assert result.stdout.split("\0") == expected + [""]
 
@@ -85,7 +86,7 @@ def test_feature_assignments_round_trip_without_evaluating_values(tmp_path: Path
     ("check-prerequisites.sh", ["--json", "--paths-only"]),
     ("check-prerequisites.sh", ["--json", "--include-tasks"]),
 ])
-@pytest.mark.parametrize("branch", ["001-normal", "001-line\nbreak\tend", '001-quote"back\\slash'])
+@pytest.mark.parametrize("branch", ["001-normal", "001-line\nbreak\tend", '001-quote"back\\slash', "001-tail ", "001-tail\t"])
 def test_script_json_outputs_escape_path_values(tmp_path, script, args, branch):
     import json
     import os
