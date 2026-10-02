@@ -353,7 +353,8 @@ create_new_agent_file() {
     
     log_info "Creating new agent context file from template..."
     
-    if ! cp -p "$TEMPLATE_FILE" "$temp_file"; then
+    # New guidance keeps the writable temporary-file mode, not template modes.
+    if ! cp "$TEMPLATE_FILE" "$temp_file"; then
         log_error "Failed to copy template file"
         return 1
     fi
@@ -588,7 +589,19 @@ update_existing_agent_file() {
         changes_entries_added=true
     fi
     
-    # Replace only after generation succeeds, keeping the target metadata.
+    # cp -p can succeed without preserving a foreign uid/gid for this account.
+    local target_ownership temp_ownership
+    if ! target_ownership=$(LC_ALL=C ls -nd "$target_file" | awk 'NR == 1 { print $3 ":" $4 }') || \
+       ! temp_ownership=$(LC_ALL=C ls -nd "$temp_file" | awk 'NR == 1 { print $3 ":" $4 }'); then
+        log_error "Failed to inspect guidance ownership before atomic replacement"
+        return 1
+    fi
+    if [[ ! "$target_ownership" =~ ^[0-9]+:[0-9]+$ ]] || [[ "$target_ownership" != "$temp_ownership" ]]; then
+        log_error "Cannot preserve existing guidance ownership ($target_ownership): replacement has $temp_ownership"
+        return 1
+    fi
+
+    # Replace only after generation and metadata checks succeed.
     if ! mv -f "$temp_file" "$target_file"; then
         log_error "Failed to update target file"
         rm -f "$temp_file"

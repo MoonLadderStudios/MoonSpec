@@ -258,3 +258,74 @@ def test_partial_generation_failure_preserves_existing_guidance(
     assert result.returncode == 1
     assert (repo / "GEMINI.md").read_text(encoding="utf-8") == GEMINI_TEXT
     assert not list(repo.glob(".agent_update.*"))
+
+
+@pytest.mark.parametrize("foreign_metadata", ["owner", "group", "both"])
+def test_foreign_ownership_cannot_be_silently_replaced(
+    tmp_path: Path, foreign_metadata: str
+) -> None:
+    repo = _consumer_repo(tmp_path)
+    target = repo / "GEMINI.md"
+    before = target.stat()
+    uid = before.st_uid + (foreign_metadata in ("owner", "both"))
+    gid = before.st_gid + (foreign_metadata in ("group", "both"))
+    metadata_env = tmp_path / "foreign-metadata.sh"
+    # Exercise both uid and gid mismatches without privileged CI setup. The
+    # real cp succeeds; this supplies the foreign target's numeric metadata.
+    metadata_env.write_text(
+        "ls() {\n"
+        '    if [[ ${@: -1} == */GEMINI.md ]]; then\n'
+        f"        builtin printf '%s\\n' '-rw-r--r-- 1 {uid} {gid} 1 Jan 1 00:00 GEMINI.md'\n"
+        "    else\n"
+        '        command ls "$@"\n'
+        "    fi\n"
+        "}\n"
+    )
+
+    result = _run(
+        repo, "--write", "gemini", extra_env={"BASH_ENV": str(metadata_env)}
+    )
+
+    assert result.returncode == 1
+    assert "ownership" in result.stderr.lower()
+    assert target.read_text(encoding="utf-8") == GEMINI_TEXT
+    after = target.stat()
+    assert (after.st_uid, after.st_gid) == (before.st_uid, before.st_gid)
+    assert not list(repo.glob(".agent_update.*"))
+
+
+def test_readonly_template_creates_writable_guidance(tmp_path: Path) -> None:
+    repo = _consumer_repo(tmp_path)
+    (repo / "CLAUDE.md").unlink()
+    (repo / ".specify/templates/agent-file-template.md").chmod(0o444)
+
+    result = _run(repo, "--write", "claude")
+
+    assert result.returncode == 0, result.stderr
+    assert (repo / "CLAUDE.md").stat().st_mode & 0o200
+    assert "Rust 1.80" in (repo / "CLAUDE.md").read_text(encoding="utf-8")
+    followup = _run(repo, "--write", "claude")
+    assert followup.returncode == 0, followup.stderr
+
+
+@pytest.mark.parametrize("probe", ["failed", "empty", "malformed"])
+def test_unavailable_ownership_evidence_preserves_guidance(
+    tmp_path: Path, probe: str
+) -> None:
+    repo = _consumer_repo(tmp_path)
+    metadata_env = tmp_path / "unavailable-metadata.sh"
+    probe_body = {
+        "failed": "return 1",
+        "empty": "return 0",
+        "malformed": "builtin printf '%s\\n' 'invalid ownership evidence'",
+    }[probe]
+    metadata_env.write_text(f"ls() {{ {probe_body}; }}\n")
+
+    result = _run(
+        repo, "--write", "gemini", extra_env={"BASH_ENV": str(metadata_env)}
+    )
+
+    assert result.returncode == 1
+    assert "ownership" in result.stderr.lower()
+    assert (repo / "GEMINI.md").read_text(encoding="utf-8") == GEMINI_TEXT
+    assert not list(repo.glob(".agent_update.*"))
