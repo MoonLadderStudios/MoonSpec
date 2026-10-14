@@ -59,7 +59,7 @@ def waiting(report):
             }
         ],
     )
-    report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = "UNVERIFIED"
+    report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = "MISSING"
     return report
 
 
@@ -1277,3 +1277,17 @@ def test_unverified_reason_cannot_mask_another_status_in_nonpass(bound, status):
     row = report["validatedRefs"]["acceptance"]["evidence"][0]
     row.update(status=status, evidenceRefs=[], unverified={"reason": "No GPU.", "verifiableBy": "GPU CI"})
     assert not acceptance.validate_report(report, current)["valid"]
+
+
+@pytest.mark.parametrize("disclosure", [None, {}, {"reason": "No GPU."}, {"verifiableBy": "GPU CI"}])
+def test_nonpass_unverified_status_requires_disclosure_and_cannot_be_gap(bound, disclosure):
+    report, current = bound
+    report = waiting(report)
+    row = report["validatedRefs"]["acceptance"]["evidence"][0]
+    row["status"] = "UNVERIFIED"
+    if disclosure is not None:
+        row["unverified"] = disclosure
+    result = acceptance.validate_report(report, current)
+    assert not result["valid"]
+    assert any("reason and owner" in error for error in result["errors"])
+    assert "unverified requirement cannot also remain a blocking gap" in result["errors"]
