@@ -256,8 +256,9 @@ the agent argument to update existing agent files. The `--write` flag records th
 explicit request; it is not a routine planning prerequisite.
 
 An authorized update must preserve manual additions, symlink targets and existing
-file permissions. Feature technology and status must not be added to `AGENTS.md`,
-including through an alias. Report any update failure rather than claiming the
+file permissions. The script never creates or updates `AGENTS.md` from plan data, including through
+an alias. Any explicitly requested repository-policy edit belongs in a separate,
+intentional guidance change; a plan template cannot supply that policy. Report any update failure rather than claiming the
 context was recorded.
 
 ## Stop Point

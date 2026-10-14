@@ -145,7 +145,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - `{AGENT_SCRIPT}` changes nothing by default
    - Only when the user explicitly requests a lasting guidance edit, add `--write` to the agent script invocation
    - Preserve manual additions, symlink targets and existing file permissions
-   - Do not add plan history to AGENTS.md, including through an alias
+   - Never create or update AGENTS.md from plan data, including through an alias; handle explicitly requested policy edits separately
    - Report any update failure
 
 **Output**: data-model.md, /contracts/*, quickstart.md; agent-specific guidance only when explicitly requested

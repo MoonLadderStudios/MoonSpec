@@ -103,6 +103,7 @@ TEMPLATE_FILE="$REPO_ROOT/.specify/templates/agent-file-template.md"
 UPDATED_AGENT_FILES=("")
 AGENT_UPDATE_TEMP_FILE=""
 RESOLVED_AGENT_FILE=""
+RESOLVED_AGENT_PARENT_DIRS=("")
 AGENTS_RESOLVED_TARGET=""
 
 # Global variables for parsed plan data
@@ -299,44 +300,86 @@ get_language_conventions() {
 }
 
 resolve_agent_file() {
-    local path="$1"
-    local link directory
+    local pending="$1" resolved="/" component candidate link had_separator
     local symlink_hops=0
-
-    while [[ -L "$path" ]]; do
-        ((symlink_hops += 1))
-        if ((symlink_hops > 40)); then
-            log_error "Agent-file symlink cycle or chain deeper than 40 links: $1"
-            return 1
-        fi
-        # A sentinel preserves newlines belonging to the destination. Remove
-        # only the sentinel and the single newline emitted by readlink.
-        if ! link=$(readlink "$path" && printf '.'); then
-            log_error "Failed to read agent-file symlink: $path"
-            return 1
-        fi
-        link=${link%.}
-        link=${link%$'\n'}
-        if [[ "$link" == /* ]]; then
-            path="$link"
+    if [[ "$pending" != /* ]]; then
+        log_error "Agent-file path must be absolute: $pending"
+        return 1
+    fi
+    # Resolve identity without creating directories. Track missing traversal
+    # parents separately; only an allowed writer may create them later.
+    RESOLVED_AGENT_PARENT_DIRS=("")
+    pending=${pending#/}
+    while [[ -n "$pending" ]]; do
+        component=${pending%%/*}
+        if [[ "$pending" == */* ]]; then
+            pending=${pending#*/}
+            had_separator=true
         else
-            path="${path%/*}/$link"
+            pending=""
+            had_separator=false
+        fi
+        # A terminal slash, . or .. requires a directory, never an agent file.
+        # Reject before creating parents or flattening that requirement away.
+        if [[ -z "$pending" ]] && { [[ "$had_separator" == true ]] || [[ "$component" == . || "$component" == .. ]]; }; then
+            log_error "Agent-file target must not be a directory path: $1"
+            return 1
+        fi
+        case "$component" in
+            ''|.) continue ;;
+            ..)
+                resolved=${resolved%/*}
+                resolved=${resolved:-/}
+                continue
+                ;;
+        esac
+        candidate="${resolved%/}/$component"
+        if [[ -L "$candidate" ]]; then
+            ((symlink_hops += 1))
+            if ((symlink_hops > 40)); then
+                log_error "Agent-file symlink cycle or chain deeper than 40 links: $1"
+                return 1
+            fi
+            # Preserve destination newlines; strip only readlink's terminator.
+            if ! link=$(readlink "$candidate" && printf '.'); then
+                log_error "Failed to read agent-file symlink: $candidate"
+                return 1
+            fi
+            link=${link%.}
+            link=${link%$'\n'}
+            if [[ "$link" == /* ]]; then
+                resolved="/"
+                link=${link#/}
+            fi
+            pending="$link${pending:+/$pending}"
+        else
+            if [[ -n "$pending" ]]; then
+                if [[ -e "$candidate" && ! -d "$candidate" ]]; then
+                    log_error "Agent-file parent is not a directory: $candidate"
+                    return 1
+                fi
+                if [[ ! -d "$candidate" ]]; then
+                    RESOLVED_AGENT_PARENT_DIRS+=("$candidate")
+                fi
+            fi
+            resolved="$candidate"
         fi
     done
-
-    directory=${path%/*}
-    directory=${directory:-/}
-    if [[ -d "$directory" ]]; then
-        if ! directory=$(CDPATH="" cd -- "$directory" && pwd -P && printf '.'); then
-            log_error "Failed to resolve agent-file parent directory: $path"
+    if [[ "$resolved" == / ]]; then
+        log_error "Agent-file target must not be a directory path: $1"
+        return 1
+    fi
+    # A path used as a traversal parent must remain a directory, even when a
+    # later .. component names it again as the apparent final destination.
+    local required_dir
+    for required_dir in "${RESOLVED_AGENT_PARENT_DIRS[@]}"; do
+        if [[ "$required_dir" == "$resolved" ]]; then
+            log_error "Agent-file target must not be a directory path: $1"
             return 1
         fi
-        directory=${directory%.}
-        directory=${directory%$'\n'}
-        path="${directory%/}/${path##*/}"
-    fi
-    # Return through a variable so no caller strips significant newlines.
-    RESOLVED_AGENT_FILE="$path"
+    done
+    # Variable return preserves trailing newlines in names on all callers.
+    RESOLVED_AGENT_FILE="$resolved"
 }
 
 resolve_protected_agents_target() {
@@ -351,15 +394,12 @@ is_manual_additions_start() {
     [[ "$1" == "<!-- MANUAL ADDITIONS START -->" ]]
 }
 
-agent_file_accepts_plan_history() {
+agent_file_is_protected() {
     local target_file="$1"
-    local logical_target_file="${2:-$target_file}"
-    [[ "${logical_target_file##*/}" != "AGENTS.md" ]] && \
-        [[ "${target_file##*/}" != "AGENTS.md" ]] || return 1
-
-    # Resolution errors are handled before any writes, independently of this
-    # yes/no policy decision. This also protects targeted sibling aliases.
-    [[ "$target_file" != "$AGENTS_RESOLVED_TARGET" ]]
+    local logical_target_file="$2"
+    [[ "${logical_target_file##*/}" == "AGENTS.md" ]] ||
+        [[ "${target_file##*/}" == "AGENTS.md" ]] ||
+        [[ "$target_file" == "$AGENTS_RESOLVED_TARGET" ]]
 }
 
 create_new_agent_file() {
@@ -367,7 +407,6 @@ create_new_agent_file() {
     local temp_file="$2"
     local project_name="$3"
     local current_date="$4"
-    local logical_target_file="${5:-$target_file}"
     
     if [[ ! -f "$TEMPLATE_FILE" ]]; then
         log_error "Template not found at $TEMPLATE_FILE"
@@ -448,15 +487,6 @@ create_new_agent_file() {
     newline=$(printf '\n')
     sed -i.bak2 "s/\\\\n/${newline}/g" "$temp_file" || return 1
 
-    if ! agent_file_accepts_plan_history "$target_file" "$logical_target_file"; then
-        sed -i.bak3 '/^## Active Technologies$/,/^## Project Structure$/{
-            /^## Project Structure$/!d
-        }' "$temp_file" || return 1
-        sed -i.bak4 '/^## Recent Changes$/,/^<!-- MANUAL ADDITIONS START -->$/{
-            /^<!-- MANUAL ADDITIONS START -->$/!d
-        }' "$temp_file" || return 1
-    fi
-    
     # Clean up backup files
     rm -f "$temp_file.bak" "$temp_file.bak2" "$temp_file.bak3" "$temp_file.bak4"
 
@@ -477,7 +507,6 @@ create_new_agent_file() {
 update_existing_agent_file() {
     local target_file="$1"
     local current_date="$2"
-    local logical_target_file="${3:-$target_file}"
     
     log_info "Updating existing agent context file..."
     
@@ -500,24 +529,20 @@ update_existing_agent_file() {
     tech_stack=$(format_technology_stack "$NEW_LANG" "$NEW_FRAMEWORK")
     local new_tech_entries=()
     local new_change_entry=""
-    local accepts_plan_history=false
-    if agent_file_accepts_plan_history "$target_file" "$logical_target_file"; then
-        accepts_plan_history=true
-    fi
     
     # Prepare new technology entries
-    if [[ $accepts_plan_history == true ]] && [[ -n "$tech_stack" ]] && ! grep -q "$tech_stack" "$target_file"; then
+    if [[ -n "$tech_stack" ]] && ! grep -q "$tech_stack" "$target_file"; then
         new_tech_entries+=("- $tech_stack ($CURRENT_BRANCH)")
     fi
     
-    if [[ $accepts_plan_history == true ]] && [[ -n "$NEW_DB" ]] && [[ "$NEW_DB" != "N/A" ]] && [[ "$NEW_DB" != "NEEDS CLARIFICATION" ]] && ! grep -q "$NEW_DB" "$target_file"; then
+    if [[ -n "$NEW_DB" ]] && [[ "$NEW_DB" != "N/A" ]] && [[ "$NEW_DB" != "NEEDS CLARIFICATION" ]] && ! grep -q "$NEW_DB" "$target_file"; then
         new_tech_entries+=("- $NEW_DB ($CURRENT_BRANCH)")
     fi
     
     # Prepare new change entry
-    if [[ $accepts_plan_history == true ]] && [[ -n "$tech_stack" ]]; then
+    if [[ -n "$tech_stack" ]]; then
         new_change_entry="- $CURRENT_BRANCH: Added $tech_stack"
-    elif [[ $accepts_plan_history == true ]] && [[ -n "$NEW_DB" ]] && [[ "$NEW_DB" != "N/A" ]] && [[ "$NEW_DB" != "NEEDS CLARIFICATION" ]]; then
+    elif [[ -n "$NEW_DB" ]] && [[ "$NEW_DB" != "N/A" ]] && [[ "$NEW_DB" != "NEEDS CLARIFICATION" ]]; then
         new_change_entry="- $CURRENT_BRANCH: Added $NEW_DB"
     fi
 
@@ -662,8 +687,13 @@ update_agent_file() {
         return 1
     fi
 
+    resolve_protected_agents_target || return 1
     resolve_agent_file "$target_file" || return 1
     target_file="$RESOLVED_AGENT_FILE"
+    if agent_file_is_protected "$target_file" "$logical_target_file"; then
+        log_info "Skipping protected AGENTS guidance; plan-derived content stays in plan.md: $logical_target_file"
+        return 0
+    fi
     if [[ -e "$target_file" && ! -f "$target_file" ]]; then
         log_error "Unsupported non-regular agent context target: $target_file"
         return 1
@@ -676,31 +706,21 @@ update_agent_file() {
     local current_date
     current_date=$(date +%Y-%m-%d)
     
-    # Creating a missing parent may expose another symlink behind a ../ path.
-    # Resolve again until the final destination has a real parent directory.
-    local target_dir
-    local preparation_hops=0
-    while :; do
-        ((preparation_hops += 1))
-        if ((preparation_hops > 40)); then
-            log_error "Agent-file parent resolution exceeded 40 steps: $logical_target_file"
+    # Identity checks above are read-only. Create only the selected unprotected
+    # target's traversal parents, retaining dangling symlink usability.
+    local required_dir
+    for required_dir in "${RESOLVED_AGENT_PARENT_DIRS[@]}"; do
+        if [[ -n "$required_dir" ]] && ! mkdir -p "$required_dir"; then
+            log_error "Failed to create directory: $required_dir"
             return 1
         fi
-        target_dir=${target_file%/*}
-        target_dir=${target_dir:-/}
-        if [[ -d "$target_dir" ]]; then
-            break
-        fi
-        if ! mkdir -p "$target_dir"; then
-            log_error "Failed to create directory: $target_dir"
-            return 1
-        fi
-        resolve_agent_file "$target_file" || return 1
-        target_file="$RESOLVED_AGENT_FILE"
     done
-
-    # Refresh protected identity after parent creation, before policy or dedup.
-    resolve_protected_agents_target || return 1
+    local target_dir="${target_file%/*}"
+    target_dir=${target_dir:-/}
+    if ! mkdir -p "$target_dir"; then
+        log_error "Failed to create directory: $target_dir"
+        return 1
+    fi
     if [[ -e "$target_file" && ! -f "$target_file" ]]; then
         log_error "Unsupported non-regular agent context target: $target_file"
         return 1
@@ -724,7 +744,7 @@ update_agent_file() {
         }
         AGENT_UPDATE_TEMP_FILE="$temp_file"
         
-        if create_new_agent_file "$target_file" "$temp_file" "$project_name" "$current_date" "$logical_target_file"; then
+        if create_new_agent_file "$target_file" "$temp_file" "$project_name" "$current_date"; then
             if mv -f "$temp_file" "$target_file"; then
                 rm -f "$temp_file"
                 AGENT_UPDATE_TEMP_FILE=""
@@ -752,7 +772,7 @@ update_agent_file() {
             return 1
         fi
         
-        if update_existing_agent_file "$target_file" "$current_date" "$logical_target_file"; then
+        if update_existing_agent_file "$target_file" "$current_date"; then
             log_success "Updated existing $agent_name context file"
         else
             log_error "Failed to update existing agent file"

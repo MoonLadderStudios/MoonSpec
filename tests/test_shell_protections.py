@@ -367,3 +367,110 @@ def test_parent_creation_reveals_symlink_before_atomic_write(
     assert (root / "alias.md").is_symlink()
     assert "Python 3.12 + pytest" in target.read_text()
     assert Path(record.read_text().splitlines()[-2]).parent == target.parent
+
+
+@pytest.mark.parametrize("agent", [(), ("claude",), ("gemini",)])
+@pytest.mark.parametrize(
+    "spelling", ["missing/../context.md", "missing/child/../../context.md"]
+)
+@pytest.mark.parametrize("existing", [True, False])
+def test_dangling_protected_alias_does_not_write_or_create_directories(
+    tmp_path, projected, agent, spelling, existing
+):
+    root = consumer(tmp_path, projected)
+    target = root / "context.md"
+    if existing:
+        target.write_text(GUIDANCE)
+    (root / "AGENTS.md").symlink_to(spelling)
+    (root / "CLAUDE.md").symlink_to("context.md")
+    (root / "GEMINI.md").symlink_to("context.md")
+    result = run(root, "update-agent-context.sh", "--write", *agent)
+    assert result.returncode == 0, result.stderr
+    assert target.read_text() == GUIDANCE if existing else not target.exists()
+    assert not (root / "missing").exists()
+    assert (root / "AGENTS.md").is_symlink()
+    assert (root / "CLAUDE.md").is_symlink()
+    assert (root / "GEMINI.md").is_symlink()
+    assert not list(root.rglob(".agent_update.*"))
+
+
+@pytest.mark.parametrize("agent", [(), ("codex",), ("claude",), ("gemini",)])
+@pytest.mark.parametrize("alias", [True, False])
+@pytest.mark.parametrize("existing", [True, False])
+def test_protected_guidance_never_enters_plan_template_writer(
+    tmp_path, projected, agent, alias, existing
+):
+    root = consumer(tmp_path, projected)
+    target = root / ("policy/context.md" if alias else "AGENTS.md")
+    if existing:
+        target.parent.mkdir(exist_ok=True)
+        target.write_text(GUIDANCE)
+    if alias:
+        (root / "AGENTS.md").symlink_to("policy/context.md")
+    (root / "CLAUDE.md").symlink_to(str(target.relative_to(root)))
+    (root / "GEMINI.md").symlink_to(str(target.relative_to(root)))
+    result = run(root, "update-agent-context.sh", "--write", *agent)
+    assert result.returncode == 0, result.stderr
+    assert target.read_text() == GUIDANCE if existing else not target.exists()
+    if alias and not existing:
+        assert not target.parent.exists()
+    assert "Skipping protected AGENTS guidance" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "destination",
+    [
+        "context.md/",
+        "context.md/.",
+        "missing/../context.md/",
+        "missing/..",
+        "missing/../missing",
+        "missing/child/../../missing",
+        "alias",
+    ],
+)
+@pytest.mark.parametrize("existing", [True, False])
+def test_directory_required_symlink_destinations_fail_without_writes(
+    tmp_path, projected, destination, existing
+):
+    root = consumer(tmp_path, projected)
+    target = root / "context.md"
+    if existing:
+        target.write_text(GUIDANCE)
+    if destination == "alias":
+        (root / "alias").symlink_to("context.md/")
+    (root / "CLAUDE.md").symlink_to(destination)
+    result = run(root, "update-agent-context.sh", "--write", "claude")
+    assert result.returncode != 0
+    assert target.read_text() == GUIDANCE if existing else not target.exists()
+    assert not (root / "missing").exists()
+    assert (root / "CLAUDE.md").is_symlink()
+
+
+@pytest.mark.parametrize("protected", [True, False])
+def test_directory_symlinks_precede_dotdot_identity_normalization(
+    tmp_path, projected, protected
+):
+    root = consumer(tmp_path, projected)
+    outside = tmp_path / "outside"
+    (outside / "deep").mkdir(parents=True)
+    target = outside / "context.md"
+    target.write_text(GUIDANCE)
+    canary = root / "context.md"
+    canary.write_text("Not the same target\n")
+    (root / "directory-alias").symlink_to(outside / "deep", target_is_directory=True)
+    spelling = "directory-alias/missing/../../context.md"
+    if protected:
+        (root / "AGENTS.md").symlink_to(spelling)
+        (root / "CLAUDE.md").symlink_to(target)
+    else:
+        (root / "CLAUDE.md").symlink_to(spelling)
+    result = run(root, "update-agent-context.sh", "--write", "claude")
+    assert result.returncode == 0, result.stderr
+    assert canary.read_text() == "Not the same target\n"
+    if protected:
+        assert target.read_text() == GUIDANCE
+        assert not (outside / "deep/missing").exists()
+    else:
+        assert "Python 3.12 + pytest" in target.read_text()
+        assert (root / "CLAUDE.md").read_text() == target.read_text()
