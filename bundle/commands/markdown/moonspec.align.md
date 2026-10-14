@@ -35,7 +35,7 @@ This command MUST run only after `/moonspec.tasks` has successfully produced a c
 
 ## Operating Constraints
 
-**Artifact-editing command**: This command may modify MoonSpec artifacts, including `spec.md`, `plan.md`, `tasks.md`, `research.md`, `data-model.md`, `quickstart.md`, files under `contracts/`, and feature checklists when present.
+**Artifact-editing command**: Edit temporary MoonSpec artifacts (`spec.md`, `plan.md`, `tasks.md`, supporting designs, contracts, and feature checklists), never canonical `docs/`. Preserve explicit task-authorized changes when source docs describe old behavior; their in-place documentation corrections belong to implementation. Otherwise, follow adopted source requirements.
 
 **No user input loop**: Do **not** ask the user for clarification or permission before applying remediation. Resolve uncertainty by reading project context, weighing tradeoffs, choosing conservative defaults, documenting assumptions, and applying the least surprising coherent edit.
 
@@ -114,12 +114,13 @@ Create internal representations:
 - **Requirements inventory**: For each `FR-*`, buildable `SC-*`, acceptance scenario, edge case, and in-scope source requirement, record a stable key.
 - **Task coverage mapping**: Map each task to one or more requirements, scenarios, success criteria, source requirements, or design artifacts.
 - **Artifact authority order**:
-  1. Explicit source design requirements and relevant `AGENTS.md` principles
-  2. Original feature input preserved in `spec.md`
-  3. `spec.md` user-visible behavior and acceptance criteria
-  4. `plan.md` architecture and technical decisions
-  5. Design artifacts such as contracts, data model, research, and quickstart
-  6. `tasks.md` execution breakdown
+  1. Applicable `AGENTS.md` requirements and explicit task-authorized behavior changes
+  2. Source design requirements adopted by the task
+  3. Original feature input preserved in `spec.md`
+  4. `spec.md` user-visible behavior and acceptance criteria
+  5. `plan.md` architecture and technical decisions
+  6. Design artifacts such as contracts, data model, research, and quickstart
+  7. `tasks.md` execution breakdown
 - **Project context**: Language, frameworks, test tools, file structure, conventions, and safe validation commands.
 
 ### 4. Detection Passes
