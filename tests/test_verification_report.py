@@ -342,3 +342,27 @@ def test_unverified_does_not_accept_malformed_empty_refs(completed, refs):
     unreachable_criterion(report, current, {"reason": "No GPU.", "verifiableBy": "GPU CI"})
     report["validatedRefs"]["acceptance"]["evidence"][1]["evidenceRefs"] = refs
     assert not acceptance.validate_report(report, current)["valid"]
+
+
+@pytest.mark.parametrize("status", ["FAILED", "VERIFIED", "MISSING", "UNKNOWN", None])
+def test_legacy_unverified_metadata_cannot_mask_explicit_status(completed, status):
+    report, current = completed
+    unreachable_criterion(report, current, {"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    report["validatedRefs"]["acceptance"]["evidence"][1]["status"] = status
+    assert not acceptance.validate_report(report, current)["valid"]
+    assert not acceptance.reuse(report, current)["reusable"]
+
+
+def test_legacy_unverified_status_requires_disclosure_even_with_refs(completed):
+    report, current = completed
+    report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = "UNVERIFIED"
+    assert not acceptance.validate_report(report, current)["valid"]
+    assert not acceptance.reuse(report, current)["reusable"]
+
+
+def test_legacy_explicit_unverified_with_disclosure_is_nonblocking(completed):
+    report, current = completed
+    unreachable_criterion(report, current, {"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    report["validatedRefs"]["acceptance"]["evidence"][1]["status"] = "UNVERIFIED"
+    assert acceptance.validate_report(report, current)["valid"]
+    assert acceptance.reuse(report, current)["reusable"]
