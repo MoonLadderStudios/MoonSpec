@@ -105,7 +105,7 @@ Read:
 
 ## Source Acceptance Coverage
 
-When `artifacts/moonspec/acceptance-assessment.json` exists and its `featureId` matches the active feature, every missing, partial, conflict, or required-unverified row must map to tests and implementation or verification tasks. Each negative constraint row must be preserved as a test, verification task, or explicit non-repo-verifiable exclusion.
+When `artifacts/moonspec/acceptance-assessment.json` exists and its `featureId` matches the active feature, every missing, partial, or conflict implementation row must map to tests and implementation or verification tasks. Unverified criteria are disclosure-only: preserve their source IDs, reason and verifiableBy outside executable tasks and outside the remediation backlog, even when the criterion is required. Do not turn unavailable checks into tasks or infer missing implementation from an Unverified assessment. Each negative constraint row must be preserved as a test, verification task, or explicit non-repo-verifiable exclusion; an Unverified negative constraint follows the same disclosure-only rule.
 
 Build a traceability inventory before writing tasks:
 

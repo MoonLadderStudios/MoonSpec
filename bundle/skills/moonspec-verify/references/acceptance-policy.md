@@ -44,6 +44,14 @@ does not produce a non-passing verdict, remaining work, or a stop. A defect that
 any check actually observes still blocks. The selected scope is unchanged:
 Unverified criteria stay in it, are reported, and are never described as passed.
 
+Unverified does not grant permission. An actual missing authorization or operator
+decision needed to act on the selected operation remains a `needs_human` handoff;
+do not perform that action or report its authorized completion until supplied.
+Name the exact decision, required owner, and affected action. Do not invent an
+authority gate from unavailable deployment evidence, physical testing, or test
+signoff: those remain Unverified disclosures when outside the verifier's reach.
+Separately scoped release approvals do not gate implementation completion.
+
 Recover truncated mandatory source content through its authorized owning reader.
 When recovery cannot supply it, assess the visible scope and identify the missing
 source fields. Never fabricate a requirement from a truncation marker. Set scope

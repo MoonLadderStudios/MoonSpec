@@ -366,3 +366,37 @@ def test_legacy_explicit_unverified_with_disclosure_is_nonblocking(completed):
     report["validatedRefs"]["acceptance"]["evidence"][1]["status"] = "UNVERIFIED"
     assert acceptance.validate_report(report, current)["valid"]
     assert acceptance.reuse(report, current)["reusable"]
+
+
+@pytest.mark.parametrize("with_current", [False, True])
+@pytest.mark.parametrize("row_update", [
+    {"status": "UNVERIFIED"},
+    {"status": "FAILED", "unverified": {"reason": "No GPU.", "verifiableBy": "GPU CI"}},
+    {"status": "UNVERIFIED", "unverified": {"reason": "No GPU."}},
+])
+def test_legacy_nonpass_validates_unverified_declarations(completed, with_current, row_update):
+    report, current = completed
+    report.update(pending())
+    row = report["validatedRefs"]["acceptance"]["evidence"][0]
+    row.update(row_update)
+    assert not acceptance.validate_report(report, current if with_current else None)["valid"]
+
+
+@pytest.mark.parametrize("with_current", [False, True])
+@pytest.mark.parametrize("explicit_status", [False, True])
+@pytest.mark.parametrize("gap_field", ["requirement", "requirementIds"])
+def test_legacy_nonpass_unverified_cannot_overlap_remaining_work(completed, with_current, explicit_status, gap_field):
+    report, current = completed
+    report.update(pending())
+    unreachable_criterion(report, current, {"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    row = report["validatedRefs"]["acceptance"]["evidence"][1]
+    if explicit_status:
+        row["status"] = "UNVERIFIED"
+    assert acceptance.validate_report(report, current if with_current else None)["valid"]
+    report["remainingWork"][0][gap_field] = "AC-2" if gap_field == "requirement" else ["AC-1", "AC-2"]
+    result = acceptance.validate_report(report, current if with_current else None)
+    assert "unverified requirement cannot also remain a blocking gap" in result["errors"]
+
+
+def test_legacy_nonpass_without_acceptance_binding_still_valid():
+    assert acceptance.validate_report(pending())["valid"]

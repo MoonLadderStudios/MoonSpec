@@ -962,6 +962,42 @@ def _current_nonpassing_errors(report: dict, current: dict) -> list[str]:
     return errors
 
 
+def _unverified_report_errors(report: dict) -> list[str]:
+    """Enforce disclosures even in compatibility reports without source maps.
+
+    An absent legacy binding is not itself an error. Inspect declarations that
+    are present without imposing source-bound proof requirements on old reports.
+    """
+    refs = report.get("validatedRefs")
+    binding = refs.get("acceptance") if isinstance(refs, dict) else None
+    if not isinstance(binding, dict):
+        return []
+    rows = binding.get("evidence")
+    if not isinstance(rows, list):
+        return []
+    errors = []
+    unverified_ids = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if row.get("status") == "UNVERIFIED" or row.get("unverified") is not None:
+            if not _unverified(row):
+                errors.append("unverified requirement needs compatible status, reason and owner without evidence")
+            if _text(row.get("requirementId")):
+                unverified_ids.add(row["requirementId"])
+    work = report.get("remainingWork")
+    if isinstance(work, list):
+        for item in work:
+            if not isinstance(item, dict):
+                continue
+            ids = item.get("requirementIds", [])
+            ids = ids if isinstance(ids, list) else []
+            if any(isinstance(key, str) and key in unverified_ids
+                   for key in [item.get("requirement"), *ids]):
+                errors.append("unverified requirement cannot also remain a blocking gap")
+    return errors
+
+
 def validate_report(report: object, current: dict | None = None) -> dict:
     """Preflight producer output, not proof that referenced checks actually ran.
 
@@ -979,7 +1015,7 @@ def validate_report(report: object, current: dict | None = None) -> dict:
         "NO_DETERMINATION": {"reattempt_current_step", "needs_human", "blocked"},
         "BLOCKED": {"blocked"},
     }
-    errors = []
+    errors = _unverified_report_errors(report)
     verdict = report.get("verdict")
     action = report.get("recommendedNextAction")
     if not isinstance(verdict, str) or verdict not in actions:

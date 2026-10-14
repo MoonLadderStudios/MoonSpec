@@ -495,10 +495,18 @@ JSON is requested, use `recommendedNextAction` and
 Before requesting another attempt, identify the concrete change or controlling
 check that an authorized remediation step can actually execute. Distinguish
 repository work from prerequisites such as a missing container-test capability,
-live deployment access, or a required operator decision. Complete feasible
+or live deployment access. Complete feasible
 repository work; criteria that remain out of the verifier's reach are
 Unverified, so once only those remain, return `FULLY_IMPLEMENTED`. Do not spend
 another attempt repeating a check that cannot run here.
+
+Unverified does not grant permission. An actual missing authorization or operator
+decision needed to act on the selected operation remains a `needs_human` handoff;
+do not perform that action or report its authorized completion until supplied.
+Name the exact decision, required owner, and affected action. Do not invent an
+authority gate from unavailable deployment evidence, physical testing, or test
+signoff: those remain Unverified disclosures when outside the verifier's reach.
+Separately scoped release approvals do not gate implementation completion.
 
 Keep Unverified criteria visible in the report and handoff with their reason and
 who could verify them. Missing test tooling is an environment limitation, not

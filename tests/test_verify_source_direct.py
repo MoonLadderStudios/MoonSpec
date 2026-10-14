@@ -51,3 +51,22 @@ def test_unverified_producer_contract_is_nonblocking_and_disclosed():
     assert "Unverified rows must not appear in `remainingWork`" in policy
     assert "Passed rows plus gap IDs" not in policy
     assert "valid Unverified rows, and source-linked remaining work" in " ".join(policy.split())
+
+
+def test_assessment_unverified_disclosure_survives_task_generation_contract():
+    assess = (BUNDLE / "skills/moonspec-assess/SKILL.md").read_text()
+    tasks = (BUNDLE / "skills/moonspec-tasks/SKILL.md").read_text()
+    assert "Unverified criteria are disclosure-only" in assess
+    assert "Unverified criteria are disclosure-only" in tasks
+    assert "required-unverified row must map" not in tasks
+    assert "outside executable tasks" in tasks
+    assert "reason and verifiableBy" in tasks
+
+
+def test_unverified_evidence_does_not_waive_required_permission():
+    verify = " ".join((BUNDLE / "skills/moonspec-verify/SKILL.md").read_text().split())
+    policy = " ".join((BUNDLE / "skills/moonspec-verify/references/acceptance-policy.md").read_text().split())
+    for text in (verify, policy):
+        assert "Unverified does not grant permission" in text
+        assert "actual missing authorization or operator decision needed to act" in text
+        assert "Do not invent an authority gate" in text
