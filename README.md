@@ -2,16 +2,15 @@
 
 MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to Spec-Driven Development:
 
-1. Maintain declarative, desired-state documents as the primary source of truth
+1. Keep useful docs accurate in the same change; the current task and applicable AGENTS.md set requirements
 2. Breakdown declarative documents into one or more stories
 3. Implement one story at a time (not 3+)
 4. Generate imperative plans and tasks only as temporary artifacts
 5. Implement code using Test-Driven Development (TDD)
 6. Aim to create both integration tests and unit tests
 7. Use the verify skill to enable a corrective loop with a quality gate
-8. Use the doc-reconcile skill when the document is impossible, unclear, or inconsistent
-9. Keep constitution-like guidance in AGENTS.md
-10. Chain all of the implementation steps with an orchestrate skill
+8. Keep constitution-like guidance in AGENTS.md
+9. Chain all of the implementation steps with an orchestrate skill
 
 Note that for chaining steps, an orchestration tool like [MoonMind](https://github.com/MoonLadderStudios/MoonMind) is recommended because it improves context management and the resilience of failed steps.
 
@@ -30,8 +29,7 @@ The main lifecycle is:
 5. `/moonspec.align` for artifact consistency repair.
 6. `/moonspec.implement` for implementation.
 7. `/moonspec.verify` as the final read-only completion gate.
-8. `/moonspec.doc-reconcile` after successful verification when canonical docs need updates.
-9. `/moonspec.orchestrate` to coordinate the lifecycle for a preselected one-story request.
+8. `/moonspec.orchestrate` to coordinate the lifecycle for a preselected one-story request.
 
 ## Bundle Layout
 
@@ -74,7 +72,7 @@ The validator checks exported file existence, skill front matter, OpenAI wrapper
 
 ## Projection
 
-MoonMind consumes this repository as a pinned git submodule at `vendor/moonspec`.
+MoonMind consumes this repository as a pinned git submodule at `moonspec`.
 
 For a consumer checkout, project the bundle with:
 
@@ -83,7 +81,7 @@ python tools/project_bundle.py --target /path/to/consumer --projection moonmind 
 python tools/project_bundle.py --target /path/to/consumer --projection moonmind --check
 ```
 
-MoonMind has its own wrapper around this projection so it can add generated-file headers and enforce consumer-specific drift checks.
+Both projection entrypoints check for retired files in the bundle's skill and command namespaces; `--write` removes them while preserving custom assets outside those namespaces. Output scopes must be real directories within the consumer. MoonMind's wrapper adds its consumer-specific checks.
 
 ## CLI
 
