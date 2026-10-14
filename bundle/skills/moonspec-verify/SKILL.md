@@ -428,7 +428,7 @@ Use these statuses:
 
 Rules:
 
-- Do not mark the feature `FULLY_IMPLEMENTED` unless every in-scope source requirement, relevant AGENTS.md principle, source design requirement, and acceptance-critical behavior is `VERIFIED`.
+- Do not mark the feature `FULLY_IMPLEMENTED` unless every in-scope source requirement, relevant AGENTS.md principle, source design requirement, and acceptance-critical behavior is `VERIFIED` or validly Unverified under the shared acceptance policy.
 - Missing required unit tests or repo-local hermetic checks is a verification failure unless the selected verification baseline clearly makes that test class irrelevant.
 - Missing repo-local hermetic integration coverage for acceptance-critical behavior is a verification gap. Evidence the verifier cannot obtain follows the acceptance policy: the criterion is Unverified, and optional diagnostics remain non-blocking.
 - Separate missing implementation from missing validation when both matter.
@@ -665,4 +665,4 @@ If no hooks are registered or `.specify/extensions.yml` does not exist, skip sil
 - `plan.md` and `tasks.md` are useful context but never proof of implementation.
 - Apply the shared acceptance policy consistently. Missing optional diagnostics cannot block acceptance; mandatory criteria outside the verifier's reach are Unverified, never blockers and never reported as passed.
 - Prefer direct, citeable repository evidence from production code, wiring, configuration, and tests.
-- Do not mark the feature complete when required behavior is only inferred and not verified.
+- Do not describe inferred or Unverified behavior as passed. Observed defects still block completion; criteria outside the verifier's reach follow the shared Unverified policy.

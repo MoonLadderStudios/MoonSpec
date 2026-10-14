@@ -195,7 +195,8 @@ Bind objective evidence in the existing `validatedRefs.acceptance` field using
   branch. A feature branch's upstream is not the default/completion target.
 - `evidence`: records with mandatory `requirementId` and either `evidenceRefs` or
   an `unverified` object with nonblank `reason` and `verifiableBy` (and status
-  `UNVERIFIED` on a source-bound row), never both. A
+  `UNVERIFIED` on a source-bound row), never both nonempty evidence and Unverified. `evidenceRefs` may be omitted or
+  empty for Unverified rows; `unverified: null` is absent on evidenced rows. A
   success accounts for every required row exactly once; a non-pass may preserve
   passed rows while source-linked remaining work accounts for unresolved rows.
 - `freshness`: the required policy identity and optional expiry for time-sensitive

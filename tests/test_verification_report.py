@@ -328,3 +328,17 @@ def test_identity_uses_executed_skill_copy_not_upstream_or_working_directory(tmp
         records.append(record)
     assert records[0]["files"]["SKILL.md"] != records[1]["files"]["SKILL.md"]
     assert records[0]["files"]["scripts/acceptance.py"] == records[1]["files"]["scripts/acceptance.py"]
+
+
+def test_null_unverified_is_absent_for_evidenced_row(completed):
+    report, current = completed
+    report["validatedRefs"]["acceptance"]["evidence"][0]["unverified"] = None
+    assert acceptance.validate_report(report, current)["valid"]
+
+
+@pytest.mark.parametrize("refs", [None, "", {}, False])
+def test_unverified_does_not_accept_malformed_empty_refs(completed, refs):
+    report, current = completed
+    unreachable_criterion(report, current, {"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    report["validatedRefs"]["acceptance"]["evidence"][1]["evidenceRefs"] = refs
+    assert not acceptance.validate_report(report, current)["valid"]

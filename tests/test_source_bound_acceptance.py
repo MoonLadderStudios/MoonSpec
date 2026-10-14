@@ -1202,3 +1202,78 @@ def test_unverified_success_row_needs_its_reason_and_owner(bound, row_update):
     report, current = bound
     add_unreachable_row(report, current, row_update)
     assert not acceptance.validate_report(report, current)["valid"]
+
+
+@pytest.mark.parametrize("omit_refs", [False, True])
+def test_unverified_row_accepts_empty_or_omitted_refs(bound, omit_refs):
+    report, current = bound
+    add_unreachable_row(report, current, {
+        "status": "UNVERIFIED",
+        "unverified": {"reason": "No GPU.", "verifiableBy": "GPU CI"},
+    })
+    if omit_refs:
+        del report["validatedRefs"]["acceptance"]["evidence"][1]["evidenceRefs"]
+    assert acceptance.validate_report(report, current)["valid"]
+    assert [r["requirementId"] for r in acceptance.reuse(report, current)["reusableRows"]] == ["AC-1"]
+
+
+@pytest.mark.parametrize("verdict,action", [
+    ("ADDITIONAL_WORK_NEEDED", "reattempt_current_step"),
+    ("NO_DETERMINATION", "reattempt_current_step"),
+])
+def test_unverified_coverage_does_not_hide_observed_failure(bound, verdict, action):
+    report, current = bound
+    add_unreachable_row(report, current, {
+        "status": "UNVERIFIED",
+        "unverified": {"reason": "No GPU.", "verifiableBy": "GPU CI"},
+    })
+    report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = "FAILED"
+    report.update(verdict=verdict, recommendedNextAction=action, remainingWork=[{
+        "requirement": "AC-1", "gapType": "implementation",
+        "remainingWork": "Fix observed wrong output",
+    }])
+    result = acceptance.validate_report(report, current)
+    assert result["valid"], result["errors"]
+    assert not acceptance.reuse(report, current)["reusable"]
+    assert not acceptance.reuse(report, current)["completionEligible"]
+    report.update(verdict="FULLY_IMPLEMENTED", recommendedNextAction="advance")
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
+def test_unverified_criterion_cannot_remain_a_blocking_gap(bound):
+    report, current = bound
+    add_unreachable_row(report, current, {
+        "status": "UNVERIFIED",
+        "unverified": {"reason": "No GPU.", "verifiableBy": "GPU CI"},
+    })
+    report.update(verdict="NO_DETERMINATION", recommendedNextAction="reattempt_current_step", remainingWork=[{
+        "requirement": "AC-2", "gapType": "verification", "remainingWork": "Wait for GPU",
+    }])
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
+def test_all_unverified_completion_preserves_source_and_candidate(bound):
+    report, current = bound
+    row = report["validatedRefs"]["acceptance"]["evidence"][0]
+    row.update(status="UNVERIFIED", unverified={"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    del row["evidenceRefs"]
+    del row["proofMethod"]
+    current["completionTarget"].update(
+        revision=current["subject"]["revision"],
+        contentDigest=current["subject"]["contentDigest"],
+    )
+    report["validatedRefs"]["acceptance"]["completionTarget"] = copy.deepcopy(current["completionTarget"])
+    assert acceptance.validate_report(report, current)["valid"]
+    result = acceptance.reuse(report, current)
+    assert result["completionEligible"] and result["reusableRows"] == []
+    row["obligationDigest"] = "sha256:wrong"
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
+@pytest.mark.parametrize("status", ["FAILED", "VERIFIED", "MISSING"])
+def test_unverified_reason_cannot_mask_another_status_in_nonpass(bound, status):
+    report, current = bound
+    report = waiting(report)
+    row = report["validatedRefs"]["acceptance"]["evidence"][0]
+    row.update(status=status, evidenceRefs=[], unverified={"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    assert not acceptance.validate_report(report, current)["valid"]

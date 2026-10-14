@@ -34,9 +34,11 @@ MoonSpec specs, plans, and tasks describe one independently testable story. Plan
 
 Write bounded stories with executable acceptance paths using existing test,
 container, CI, and artifact-review owners. Do not make manual human review the
-default way to finish an implementation. Missing local tools, malformed reports,
-and exhausted attempts require truthful, actionable automated handoffs, not a
-fabricated pass or a generic operator-review request. Preserve explicitly required
+default way to finish an implementation. Obtain reasonably available tools and evidence. Criteria that remain outside the
+verifier's capabilities, access, or time are Unverified with their reason and who
+could verify them; they do not block implementation completion. Keep them in scope
+and disclose them, never describe them as passed. Observed defects still block.
+Malformed reports require repair, not a fabricated pass or generic human review. Preserve explicitly required
 human authority and separately scoped release work. The canonical verification
 acceptance policy owns the detailed evidence and continuation rules.
 
