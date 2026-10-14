@@ -257,3 +257,113 @@ def test_update_all_propagates_atomic_publish_failure(tmp_path, projected):
     assert "completed successfully" not in result.stdout
     assert target.read_text() == GUIDANCE
     assert not list(root.rglob(".agent_update.*"))
+
+
+@pytest.mark.parametrize("existing", [True, False])
+@pytest.mark.parametrize("fault", ["cycle", "unreadable"])
+def test_agents_resolution_errors_fail_before_targeted_update(
+    tmp_path, projected, existing, fault
+):
+    root = consumer(tmp_path, projected)
+    target = root / "CLAUDE.md"
+    if existing:
+        target.write_text(GUIDANCE)
+    environment = {}
+    if fault == "cycle":
+        (root / "AGENTS.md").symlink_to("agents-loop.md")
+        (root / "agents-loop.md").symlink_to("AGENTS.md")
+    else:
+        (root / "AGENTS.md").symlink_to("context.md")
+        commands = root / "fake-bin"
+        commands.mkdir()
+        (commands / "readlink").write_text("#!/usr/bin/env bash\nexit 72\n")
+        (commands / "readlink").chmod(0o755)
+        environment["PATH"] = f"{commands}:{os.environ['PATH']}"
+    result = run(root, "update-agent-context.sh", "--write", "claude", env=environment)
+    assert result.returncode != 0, result.stdout
+    assert "completed successfully" not in result.stdout
+    assert "symlink" in result.stderr
+    assert target.read_text() == GUIDANCE if existing else not target.exists()
+    assert not list(root.rglob(".agent_update.*"))
+
+
+@pytest.mark.parametrize("suffix", ["\n", "\n\n"])
+@pytest.mark.parametrize("parent", ["guidance", "guidance\n"])
+@pytest.mark.parametrize("absolute", [True, False])
+@pytest.mark.parametrize("existing", [True, False])
+def test_symlink_destinations_preserve_trailing_newlines(
+    tmp_path, projected, suffix, parent, absolute, existing
+):
+    root = consumer(tmp_path, projected)
+    target = root / parent / ("context.md" + suffix)
+    target.parent.mkdir()
+    if existing:
+        target.write_text(GUIDANCE)
+    sibling = target.with_name("context.md")
+    sibling.write_text("Do not overwrite the trimmed sibling\n")
+    link = str(target) if absolute else str(target.relative_to(root))
+    (root / "CLAUDE.md").symlink_to(link)
+    result = run(root, "update-agent-context.sh", "--write", "claude")
+    assert result.returncode == 0, result.stderr
+    assert (root / "CLAUDE.md").is_symlink()
+    assert os.readlink(root / "CLAUDE.md") == link
+    assert "Python 3.12 + pytest" in target.read_text()
+    assert sibling.read_text() == "Do not overwrite the trimmed sibling\n"
+    assert not list(root.rglob(".agent_update.*"))
+
+
+def test_new_parent_canonicalization_preserves_shared_agents_identity(
+    tmp_path, projected
+):
+    root = consumer(tmp_path, projected)
+    target = root / "context.md"
+    target.write_text(GUIDANCE)
+    (root / "AGENTS.md").symlink_to("missing/../context.md")
+    (root / "CLAUDE.md").symlink_to("context.md")
+    result = run(root, "update-agent-context.sh", "--write")
+    assert result.returncode == 0, result.stderr
+    assert (root / "AGENTS.md").is_symlink()
+    assert (root / "CLAUDE.md").is_symlink()
+    assert target.read_text() == GUIDANCE
+
+
+def test_dedup_array_has_nounset_safe_initialization_for_older_bash():
+    # Bash <=4.3 treats an empty array as unset under `set -u`. This static
+    # guard complements runtime coverage where only a newer Bash is installed.
+    script = (ROOT / "bundle/scripts/bash/update-agent-context.sh").read_text()
+    assert 'UPDATED_AGENT_FILES=("")' in script
+
+
+@pytest.mark.parametrize("final_parent_exists", [True, False])
+def test_parent_creation_reveals_symlink_before_atomic_write(
+    tmp_path, projected, final_parent_exists
+):
+    root = consumer(tmp_path, projected)
+    target = root / "guidance" / "context.md"
+    if final_parent_exists:
+        target.parent.mkdir()
+    (root / "CLAUDE.md").symlink_to("missing/../alias.md")
+    (root / "alias.md").symlink_to("guidance/context.md")
+    commands = root / "fake-bin"
+    commands.mkdir()
+    (commands / "mv").write_text(
+        '#!/usr/bin/env bash\nprintf "%s\\n" "$@" > "$MV_ARGS"\n'
+        f'exec {shutil.which("mv")} "$@"\n'
+    )
+    (commands / "mv").chmod(0o755)
+    record = root / "mv-args.txt"
+    result = run(
+        root,
+        "update-agent-context.sh",
+        "--write",
+        "claude",
+        env={
+            "PATH": f"{commands}:{os.environ['PATH']}",
+            "MV_ARGS": str(record),
+        },
+    )
+    assert result.returncode == 0, result.stderr
+    assert (root / "CLAUDE.md").is_symlink()
+    assert (root / "alias.md").is_symlink()
+    assert "Python 3.12 + pytest" in target.read_text()
+    assert Path(record.read_text().splitlines()[-2]).parent == target.parent
