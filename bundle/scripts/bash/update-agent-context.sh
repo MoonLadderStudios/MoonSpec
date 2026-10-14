@@ -104,7 +104,8 @@ UPDATED_AGENT_FILES=("")
 AGENT_UPDATE_TEMP_FILE=""
 RESOLVED_AGENT_FILE=""
 RESOLVED_AGENT_PARENT_DIRS=("")
-AGENTS_RESOLVED_TARGET=""
+RESOLVED_AGENT_ALIAS_PATHS=("")
+PROTECTED_AGENTS_TARGETS=("")
 
 # Global variables for parsed plan data
 NEW_LANG=""
@@ -309,6 +310,7 @@ resolve_agent_file() {
     # Resolve identity without creating directories. Track missing traversal
     # parents separately; only an allowed writer may create them later.
     RESOLVED_AGENT_PARENT_DIRS=("")
+    RESOLVED_AGENT_ALIAS_PATHS=("")
     pending=${pending#/}
     while [[ -n "$pending" ]]; do
         component=${pending%%/*}
@@ -335,6 +337,7 @@ resolve_agent_file() {
         esac
         candidate="${resolved%/}/$component"
         if [[ -L "$candidate" ]]; then
+            RESOLVED_AGENT_ALIAS_PATHS+=("$candidate")
             ((symlink_hops += 1))
             if ((symlink_hops > 40)); then
                 log_error "Agent-file symlink cycle or chain deeper than 40 links: $1"
@@ -383,11 +386,23 @@ resolve_agent_file() {
 }
 
 resolve_protected_agents_target() {
-    AGENTS_RESOLVED_TARGET=""
-    if [[ -e "$AGENTS_FILE" || -L "$AGENTS_FILE" ]]; then
-        resolve_agent_file "$AGENTS_FILE" || return 1
-        AGENTS_RESOLVED_TARGET="$RESOLVED_AGENT_FILE"
-    fi
+    PROTECTED_AGENTS_TARGETS=("")
+    local path directory guidance
+    # Inspect only root guidance and ancestors of the selected destination
+    # and its traversed aliases. This is read-only and does not crawl unrelated repository files.
+    for path in "$AGENTS_FILE" "$@"; do
+        directory="${path%/*}"
+        while [[ -n "$directory" ]]; do
+            guidance="${directory%/}/AGENTS.md"
+            if [[ -e "$guidance" || -L "$guidance" ]]; then
+                resolve_agent_file "$guidance" || return 1
+                PROTECTED_AGENTS_TARGETS+=("$RESOLVED_AGENT_FILE")
+            fi
+            [[ "$directory" == / ]] && break
+            directory="${directory%/*}"
+            directory=${directory:-/}
+        done
+    done
 }
 
 is_manual_additions_start() {
@@ -397,24 +412,31 @@ is_manual_additions_start() {
 agent_file_is_protected() (
     local target_file="$1"
     local logical_target_file="$2"
-    # Exact guidance names remain protected. Existing aliases are compared by
-    # filesystem identity before case folding, so distinct case-only files on a
-    # case-sensitive filesystem remain independent.
+    # Exact guidance names remain protected. Compare existing aliases by
+    # filesystem identity before case folding; distinct files remain writable.
     if [[ "${logical_target_file##*/}" == "AGENTS.md" ]] ||
-        [[ "${target_file##*/}" == "AGENTS.md" ]] ||
-        [[ "$target_file" -ef "$AGENTS_RESOLVED_TARGET" ]]; then
+        [[ "${target_file##*/}" == "AGENTS.md" ]]; then
         return 0
     fi
-    if [[ -e "$target_file" && -e "$AGENTS_RESOLVED_TARGET" ]]; then
-        return 1  # Existing, demonstrably distinct files remain independent.
-    fi
-    # An absent target has no filesystem identity. Conservatively skip optional
-    # plan-context writes through case-only aliases, without probing the disk or
-    # creating unrelated paths just to decide whether guidance is protected.
+    local protected_target
+    for protected_target in "${PROTECTED_AGENTS_TARGETS[@]}"; do
+        [[ -n "$protected_target" ]] || continue
+        [[ "$target_file" -ef "$protected_target" ]] && return 0
+        if [[ -e "$target_file" && -e "$protected_target" ]]; then
+            continue
+        fi
+        # Missing identities can be case-only aliases on another filesystem.
+        shopt -s nocasematch
+        [[ "$target_file" == "$protected_target" ]] && return 0
+        shopt -u nocasematch
+    done
+    # With an existing destination and no matching protected identity, absent
+    # AGENTS.md is evidence of a distinct name even on case-insensitive disks.
+    [[ -e "$target_file" ]] && return 1
+    # An absent destination has no identity: avoid creating ambiguous guidance.
     shopt -s nocasematch
     [[ "${logical_target_file##*/}" == "AGENTS.md" ]] ||
-        [[ "${target_file##*/}" == "AGENTS.md" ]] ||
-        [[ "$target_file" == "$AGENTS_RESOLVED_TARGET" ]]
+        [[ "${target_file##*/}" == "AGENTS.md" ]]
 )
 
 create_new_agent_file() {
@@ -702,9 +724,12 @@ update_agent_file() {
         return 1
     fi
 
-    resolve_protected_agents_target || return 1
     resolve_agent_file "$target_file" || return 1
     target_file="$RESOLVED_AGENT_FILE"
+    local target_parent_dirs=("${RESOLVED_AGENT_PARENT_DIRS[@]}")
+    local target_alias_paths=("${RESOLVED_AGENT_ALIAS_PATHS[@]}")
+    resolve_protected_agents_target "$logical_target_file" "$target_file" "${target_alias_paths[@]}" || return 1
+    RESOLVED_AGENT_PARENT_DIRS=("${target_parent_dirs[@]}")
     if agent_file_is_protected "$target_file" "$logical_target_file"; then
         log_info "Skipping protected AGENTS guidance or an ambiguous alias; plan-derived content stays in plan.md: $logical_target_file"
         return 0

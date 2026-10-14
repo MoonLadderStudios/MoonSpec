@@ -538,3 +538,102 @@ def test_existing_protected_aliases_use_filesystem_identity(
         assert "Python 3.12 + pytest" in candidate.read_text()
     assert (root / "CLAUDE.md").is_symlink()
     assert (root / "GEMINI.md").is_symlink()
+
+
+@pytest.mark.parametrize("agent", [(), ("claude",), ("gemini",)])
+def test_existing_lowercase_target_without_root_guidance_is_writable(tmp_path, projected, agent):
+    root = consumer(tmp_path, projected)
+    candidate = root / "agents.md"
+    candidate.write_text(GUIDANCE)
+    if (root / "AGENTS.md").exists():
+        pytest.skip("Absent uppercase guidance requires a case-sensitive filesystem")
+    for name in ("CLAUDE.md", "GEMINI.md"):
+        (root / name).symlink_to(candidate.name)
+    result = run(root, "update-agent-context.sh", "--write", *agent)
+    assert result.returncode == 0, result.stderr
+    assert "Python 3.12 + pytest" in candidate.read_text()
+    assert not (root / "AGENTS.md").exists()
+
+
+@pytest.mark.parametrize("agent", [(), ("copilot",)])
+@pytest.mark.parametrize("scope", ["logical", "logical_parent", "physical", "physical_parent"])
+@pytest.mark.parametrize("alias", ["symlink", "hardlink", "dangling"])
+@pytest.mark.parametrize("root_guidance", [False, True])
+def test_scoped_guidance_aliases_are_read_only(tmp_path, projected, agent, scope, alias, root_guidance):
+    root = consumer(tmp_path, projected)
+    logical = root / ".github/agents/copilot-instructions.md"
+    logical.parent.mkdir(parents=True)
+    physical = root / "policy/nested/context.md"
+    physical.parent.mkdir(parents=True)
+    scoped_dir = {
+        "logical": logical.parent,
+        "logical_parent": logical.parent.parent,
+        "physical": physical.parent,
+        "physical_parent": physical.parent.parent,
+    }[scope]
+    protected = scoped_dir / "AGENTS.md"
+    if alias != "dangling":
+        physical.write_text(GUIDANCE)
+    if alias == "hardlink":
+        protected.hardlink_to(physical)
+    else:
+        protected.symlink_to(os.path.relpath(physical, scoped_dir))
+    logical.symlink_to(os.path.relpath(physical, logical.parent))
+    if root_guidance:
+        (root / "AGENTS.md").write_text("Independent root guidance\n")
+    before = sorted(str(path.relative_to(root)) for path in root.rglob("*"))
+    result = run(root, "update-agent-context.sh", "--write", *agent)
+    assert result.returncode == 0, result.stderr
+    assert "Skipping protected AGENTS guidance" in result.stdout
+    assert sorted(str(path.relative_to(root)) for path in root.rglob("*")) == before
+    assert logical.is_symlink()
+    if alias == "dangling":
+        assert not physical.exists()
+    else:
+        assert physical.read_text() == GUIDANCE
+        assert protected.read_text() == GUIDANCE
+
+
+def test_unrelated_scoped_guidance_does_not_block_selected_target(tmp_path, projected):
+    root = consumer(tmp_path, projected)
+    unrelated = root / "unrelated/AGENTS.md"
+    unrelated.parent.mkdir()
+    unrelated.symlink_to("AGENTS.md")  # An irrelevant cycle must not be traversed.
+    (root / "CLAUDE.md").write_text(GUIDANCE)
+    result = run(root, "update-agent-context.sh", "--write", "claude")
+    assert result.returncode == 0, result.stderr
+    assert "Python 3.12 + pytest" in (root / "CLAUDE.md").read_text()
+    assert unrelated.is_symlink()
+
+
+def test_selected_scoped_guidance_resolution_failure_prevents_write(tmp_path, projected):
+    root = consumer(tmp_path, projected)
+    directory = root / ".github/agents"
+    directory.mkdir(parents=True)
+    (directory / "AGENTS.md").symlink_to("AGENTS.md")
+    candidate = directory / "copilot-instructions.md"
+    candidate.write_text(GUIDANCE)
+    result = run(root, "update-agent-context.sh", "--write", "copilot")
+    assert result.returncode != 0
+    assert "symlink cycle" in result.stderr
+    assert candidate.read_text() == GUIDANCE
+
+
+@pytest.mark.parametrize("intermediate", ["AGENTS.md", "link.md"])
+@pytest.mark.parametrize("agent", [(), ("claude",)])
+def test_traversed_scoped_guidance_alias_remains_read_only(tmp_path, projected, intermediate, agent):
+    root = consumer(tmp_path, projected)
+    policy = root / "policy"
+    policy.mkdir()
+    target = root / "context.md"
+    target.write_text(GUIDANCE)
+    (policy / "AGENTS.md").symlink_to("../context.md")
+    if intermediate != "AGENTS.md":
+        (policy / intermediate).symlink_to("../context.md")
+    (root / "CLAUDE.md").symlink_to(f"policy/{intermediate}")
+    result = run(root, "update-agent-context.sh", "--write", *agent)
+    assert result.returncode == 0, result.stderr
+    assert "Skipping protected AGENTS guidance" in result.stdout
+    assert target.read_text() == GUIDANCE
+    assert (policy / "AGENTS.md").is_symlink()
+    assert (root / "CLAUDE.md").is_symlink()
