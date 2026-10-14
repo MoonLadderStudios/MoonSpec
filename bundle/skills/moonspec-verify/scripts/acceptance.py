@@ -324,7 +324,11 @@ def _blocking_requirement_ids(report: dict) -> set[str] | None:
     """Conservatively retain both identifier fields; opaque gaps remain unknown."""
     work = report.get("remainingWork")
     if not work:
-        return None if report.get("remainingWorkRef") else set()
+        if report.get("verdict") != "FULLY_IMPLEMENTED" or report.get(
+            "remainingWorkRef"
+        ):
+            return None
+        return set()
     if not isinstance(work, list):
         return None
     ids = set()

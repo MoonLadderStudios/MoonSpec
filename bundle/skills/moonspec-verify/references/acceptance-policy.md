@@ -202,7 +202,8 @@ inventory need not rerun eleven genuinely passed rows to collect a twelfth proof
 Reevaluate actual observations under a changed policy rather than rerunning an
 unchanged workload when those observations still prove the new obligation.
 Rows named by either remaining-work ID field are not reusable, even if also
-marked `VERIFIED`; an opaque-only gap reference cannot certify partial passes.
+marked `VERIFIED`; a nonpass with absent/empty inline gaps or an opaque-only gap
+reference cannot certify partial passes.
 Current handoffs use canonical primary `requirement` IDs; if `requirementIds` is
 also present it must include that primary ID. Narrative belongs in `remainingWork`.
 A validated exact previous/current scope reconciliation can retain unchanged

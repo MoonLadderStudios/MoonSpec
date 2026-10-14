@@ -1011,3 +1011,18 @@ def test_malformed_verified_neighbor_does_not_discard_unrelated_pass(bound):
         row["requirementId"]
         for row in acceptance.reuse(report, current)["reusableRows"]
     ] == ["AC-1"]
+
+
+@pytest.mark.parametrize(
+    "verdict", ["BLOCKED", "NO_DETERMINATION", "ADDITIONAL_WORK_NEEDED", "UNKNOWN"]
+)
+@pytest.mark.parametrize("work", ["absent", None, [], {}])
+def test_unexplained_nonpass_cannot_certify_partial_rows(bound, verdict, work):
+    report, current = bound
+    report.update(verdict=verdict, recommendedNextAction="blocked")
+    if work != "absent":
+        report["remainingWork"] = work
+    assert not acceptance.validate_report(report, current)["valid"]
+    result = acceptance.reuse(report, current)
+    assert not result["reusable"] and not result["completionEligible"]
+    assert result["reusableRows"] == []
