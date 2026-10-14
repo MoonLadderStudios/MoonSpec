@@ -298,6 +298,47 @@ def _validate_reconciliation(value: object, scope: dict) -> None:
         )
 
 
+def _scope_allows_partial(prior: object, current: dict) -> bool:
+    """Retain unchanged rows only through the caller's exact source lineage."""
+    scope = current.get("scope")
+    if not isinstance(prior, dict) or not isinstance(scope, dict):
+        return False
+    if prior == scope:
+        return True
+    reconciliation = current.get("scopeReconciliation")
+    try:
+        _validate_reconciliation(reconciliation, scope)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+    return (
+        reconciliation["previousScope"] == prior
+        and prior.get("complete") is True
+        and scope.get("complete") is True
+        and all(
+            prior.get(key) == scope.get(key) for key in ("sourceRef", "sourceDigest")
+        )
+    )
+
+
+def _blocking_requirement_ids(report: dict) -> set[str] | None:
+    """Conservatively retain both identifier fields; opaque gaps remain unknown."""
+    work = report.get("remainingWork")
+    if not work:
+        return None if report.get("remainingWorkRef") else set()
+    if not isinstance(work, list):
+        return None
+    ids = set()
+    for item in work:
+        if not isinstance(item, dict) or not _text(item.get("requirement")):
+            return None
+        ids.add(item["requirement"])
+        if "requirementIds" in item:
+            if not nonblank_strings(item["requirementIds"]):
+                return None
+            ids.update(item["requirementIds"])
+    return ids
+
+
 def _source_bound(report: dict, current: dict) -> bool:
     refs = report.get("validatedRefs")
     binding = refs.get("acceptance") if isinstance(refs, dict) else None
@@ -390,26 +431,31 @@ def _strict_errors(
     ):
         errors.append("judgment is not bound to the current candidate")
     scope = current.get("scope")
-    if not isinstance(scope, dict) or binding.get("scope") != scope:
+    prior_scope = binding.get("scope")
+    if not isinstance(scope, dict) or (
+        prior_scope != scope
+        and not (partial and _scope_allows_partial(prior_scope, current))
+    ):
         errors.append("judgment is not bound to the current source scope")
     try:
         bind_verification_map(
             current, {"scope": scope, "verificationMap": current.get("verificationMap")}
         )
         bind_verification_map(
-            current,
-            {
-                "scope": binding.get("scope"),
-                "verificationMap": binding.get("verificationMap"),
-            },
+            {**current, "scope": prior_scope} if partial else current,
+            {"scope": prior_scope, "verificationMap": binding.get("verificationMap")},
         )
     except (ValueError, TypeError):
         errors.append("source-bound verification map is invalid")
-    if "scopeReconciliation" in binding:
-        try:
-            _validate_reconciliation(binding["scopeReconciliation"], scope)
-        except (TypeError, ValueError):
-            errors.append("invalid source scope reconciliation")
+    for value, value_scope in (
+        (binding, prior_scope if partial else scope),
+        (current, scope),
+    ):
+        if "scopeReconciliation" in value:
+            try:
+                _validate_reconciliation(value["scopeReconciliation"], value_scope)
+            except (TypeError, ValueError):
+                errors.append("invalid source scope reconciliation")
     if exact and binding.get("scopeReconciliation") != current.get(
         "scopeReconciliation"
     ):
@@ -536,12 +582,17 @@ def _reusable_rows(
     if not isinstance(rows, list):
         return []
     ids = [row.get("requirementId") for row in rows if isinstance(row, dict)]
+    blocked = _blocking_requirement_ids(report)
+    if blocked is None:
+        return []
     result = []
     for row in rows:
         if (
             isinstance(row, dict)
             and ids.count(row.get("requirementId")) == 1
             and row.get("status") == "VERIFIED"
+            and _text(row.get("requirementId"))
+            and row.get("requirementId") not in blocked
             and not _row_errors(row, binding, current)
         ):
             retained = copy.deepcopy(row)
@@ -696,6 +747,8 @@ def _reuse(report: dict, current: dict, *, now: datetime | None = None) -> dict:
         report.get("verdict") != "FULLY_IMPLEMENTED"
         or report.get("invalid")
         or report.get("degraded")
+        or report.get("remainingWork")
+        or report.get("remainingWorkRef")
     ):
         reasons.append("no accepted objective verdict")
     if evidence.get("schemaVersion") != "acceptance/v1":
@@ -770,7 +823,7 @@ def _candidate_rows(report: dict, current: dict) -> list[dict]:
             subject[key] != current["subject"][key]
             for key in ("repository", "contentDigest")
         )
-        or report.get("scope") != current.get("scope")
+        or not _scope_allows_partial(report.get("scope"), current)
         or current["scope"].get("complete") is not True
     ):
         return []
@@ -845,7 +898,12 @@ def _current_nonpassing_errors(report: dict, current: dict) -> list[str]:
         return errors + ["current scope lacks mandatory source IDs"]
     for item in work:
         ids = item.get("requirementIds", [item.get("requirement")])
-        if not nonblank_strings(ids) or not set(ids) <= set(required):
+        if (
+            not nonblank_strings(ids)
+            or len(set(ids)) != len(ids)
+            or item.get("requirement") not in ids
+            or not set(ids) <= set(required)
+        ):
             errors.append(
                 "remaining work must name a mandatory requirement in current source scope"
             )
@@ -1047,6 +1105,8 @@ def main() -> None:
     commands.add_parser("identity")
     args = parser.parse_args()
     if args.command == "capture":
+        if (args.evidence or args.source_artifact_ref) and not args.assessment:
+            parser.error("--evidence and --source-artifact-ref require --assessment")
         result = capture(
             args.repo, args.repository, args.target, target_mode=args.target_mode
         )

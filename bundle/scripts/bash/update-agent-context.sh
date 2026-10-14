@@ -657,7 +657,7 @@ update_specific_agent() {
 
 update_all_existing_agents() {
     local found_agent=false
-    
+
     # Check each possible agent file and update if it exists
     if [[ -f "$CLAUDE_FILE" ]]; then
         update_agent_file "$CLAUDE_FILE" "Claude Code"

@@ -787,3 +787,227 @@ def test_busy_or_unauthorized_capability_is_never_ready(bound, status, field):
     }
     result = acceptance.admission(current)
     assert result[field] == ["AC-1"] and result["readyRequirementIds"] == []
+
+
+def two_bound_rows(bound):
+    report, current = bound
+    current["scope"]["requirementIds"].append("AC-2")
+    current["verificationMap"].append(
+        {**copy.deepcopy(current["verificationMap"][0]), "id": "AC-2"}
+    )
+    binding = report["validatedRefs"]["acceptance"]
+    binding.update(
+        scope=copy.deepcopy(current["scope"]),
+        verificationMap=copy.deepcopy(current["verificationMap"]),
+    )
+    binding["evidence"].append(
+        {
+            **copy.deepcopy(binding["evidence"][0]),
+            "requirementId": "AC-2",
+            "obligationDigest": acceptance.obligation_digest(
+                current["verificationMap"][1]
+            ),
+        }
+    )
+    return report, current
+
+
+def test_partial_reuse_excludes_contradictory_gap_and_keeps_unrelated_pass(bound):
+    report, current = two_bound_rows(bound)
+    report.update(
+        verdict="BLOCKED",
+        recommendedNextAction="blocked",
+        remainingWork=[
+            {
+                "requirement": "AC-1",
+                "gapType": "implementation",
+                "remainingWork": "Actual production output fails",
+            }
+        ],
+    )
+    assert not acceptance.validate_report(report, current)["valid"]
+    result = acceptance.reuse(report, current)
+    assert not result["reusable"] and not result["completionEligible"]
+    assert [row["requirementId"] for row in result["reusableRows"]] == ["AC-2"]
+
+
+def test_conflicting_gap_id_fields_cannot_hide_defect(bound):
+    report, current = two_bound_rows(bound)
+    binding = report["validatedRefs"]["acceptance"]
+    binding["evidence"] = binding["evidence"][:1]
+    report.update(
+        verdict="BLOCKED",
+        recommendedNextAction="blocked",
+        remainingWork=[
+            {
+                "requirement": "AC-1",
+                "requirementIds": ["AC-2"],
+                "gapType": "implementation",
+                "remainingWork": "Actual AC-1 production output fails",
+            }
+        ],
+    )
+    assert not acceptance.validate_report(report, current)["valid"]
+    assert acceptance.reuse(report, current)["reusableRows"] == []
+
+
+def test_opaque_only_gap_handoff_cannot_certify_individual_passes(bound):
+    report, current = bound
+    report.update(
+        verdict="BLOCKED",
+        recommendedNextAction="blocked",
+        remainingWorkRef="artifact:unknown-gaps",
+    )
+    assert acceptance.reuse(report, current)["reusableRows"] == []
+
+
+def reconciled_rows(bound):
+    report, current = two_bound_rows(bound)
+    previous = copy.deepcopy(current["scope"])
+    current["scope"]["requirementIds"] = ["AC-1"]
+    current["verificationMap"] = current["verificationMap"][:1]
+    current["scopeReconciliation"] = {
+        "previousScope": previous,
+        "currentScope": copy.deepcopy(current["scope"]),
+        "removedRequirements": [
+            {
+                "id": "AC-2",
+                "reason": "Inherited parent epic gate is outside child scope",
+                "sourceLocator": "exclusions",
+            }
+        ],
+    }
+    return report, current
+
+
+def test_valid_scope_retirement_keeps_unchanged_passed_row_not_old_aggregate(bound):
+    report, current = reconciled_rows(bound)
+    before = copy.deepcopy(report)
+    result = acceptance.reuse(report, current)
+    assert not result["reusable"] and not result["completionEligible"]
+    assert [row["requirementId"] for row in result["reusableRows"]] == ["AC-1"]
+    assert report == before
+    assert not acceptance.validate_report(report, current)["valid"]
+    binding = report["validatedRefs"]["acceptance"]
+    legacy = {
+        "verdict": "BLOCKED",
+        "subject": binding["subject"],
+        "scope": binding["scope"],
+        "verificationMap": binding["verificationMap"],
+        "requirementCoverage": [
+            {
+                "id": "AC-1",
+                "verificationStatus": "VERIFIED",
+                "testEvidenceRefs": ["ci:run-1/output"],
+            }
+        ],
+    }
+    assert acceptance.reuse(legacy, current)["candidateRows"] == [
+        {"requirementId": "AC-1", "evidenceRefs": ["ci:run-1/output"]}
+    ]
+
+
+@pytest.mark.parametrize(
+    "change",
+    ["missing", "previous", "current", "removed", "source", "obligation", "bytes"],
+)
+def test_scope_retirement_needs_exact_lineage_and_unchanged_row_proof(bound, change):
+    report, current = reconciled_rows(bound)
+    if change == "missing":
+        del current["scopeReconciliation"]
+    elif change == "previous":
+        current["scopeReconciliation"]["previousScope"]["requirementIds"].append("AC-3")
+    elif change == "current":
+        current["scopeReconciliation"]["currentScope"]["requirementIds"] = ["WRONG"]
+    elif change == "removed":
+        current["scopeReconciliation"]["removedRequirements"] = []
+    elif change == "source":
+        current["scope"]["sourceDigest"] = "sha256:changed"
+    elif change == "obligation":
+        current["verificationMap"][0]["proofMethods"] = ["live_provider"]
+    else:
+        current = acceptance.bind_evidence(
+            current, {"ci:run-1/output": b"changed bytes"}
+        )
+    assert acceptance.reuse(report, current).get("reusableRows", []) == []
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        ["--evidence", "test:ref", "/missing/evidence"],
+        ["--source-artifact-ref", "artifact:brief"],
+    ],
+)
+def test_capture_rejects_strict_inputs_without_map_before_git_work(tmp_path, extra):
+    from test_verification_report import SCRIPT
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "capture",
+            "--repo",
+            str(tmp_path / "not-a-repo"),
+            "--repository",
+            "example/game",
+            "--target",
+            "main",
+            "--source",
+            str(tmp_path / "missing-source"),
+            "--source-ref",
+            "example/game#1",
+            "--requirement",
+            "AC-1",
+            *extra,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 2
+    assert "--assessment" in result.stderr
+    assert not result.stdout
+
+
+def test_success_with_blocking_gap_cannot_reuse_aggregate_or_contradicted_row(bound):
+    report, current = two_bound_rows(bound)
+    report["remainingWork"] = [
+        {
+            "requirement": "AC-1",
+            "gapType": "implementation",
+            "remainingWork": "Production assertion fails",
+        }
+    ]
+    result = acceptance.reuse(report, current)
+    assert not result["reusable"]
+    assert [row["requirementId"] for row in result["reusableRows"]] == ["AC-2"]
+
+
+def test_consistent_multiple_gap_ids_remain_valid(bound):
+    report, current = two_bound_rows(bound)
+    binding = report["validatedRefs"]["acceptance"]
+    binding["evidence"] = []
+    report.update(
+        verdict="BLOCKED",
+        recommendedNextAction="blocked",
+        remainingWork=[
+            {
+                "requirement": "AC-1",
+                "requirementIds": ["AC-1", "AC-2"],
+                "gapType": "verification",
+                "remainingWork": "Collect shared proof",
+            }
+        ],
+    )
+    assert acceptance.validate_report(report, current)["valid"]
+
+
+def test_malformed_verified_neighbor_does_not_discard_unrelated_pass(bound):
+    report, current = bound
+    report["validatedRefs"]["acceptance"]["evidence"].append(
+        {"requirementId": [], "status": "VERIFIED"}
+    )
+    assert [
+        row["requirementId"]
+        for row in acceptance.reuse(report, current)["reusableRows"]
+    ] == ["AC-1"]

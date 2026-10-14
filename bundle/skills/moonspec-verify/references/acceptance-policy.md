@@ -167,7 +167,9 @@ Use `scripts/acceptance.py` beside this Skill to capture Git identities and chec
 reuse. `capture --assessment assessment.json` validates/copies the existing map
 against the separately captured source; repeat `--evidence REF PATH` for actual
 owner-retrieved report/probe files. This hashes bytes without fetching or running
-anything. With a map and no files, the inventory is explicitly empty.
+anything. `--evidence` and `--source-artifact-ref` require `--assessment`, so
+capture cannot emit an inventory/selector without its required map. With a map
+and no files, the inventory is explicitly empty.
 
 When original source is a trusted artifact, preserve `sourceBinding` with its
 `artifactRef` and RFC6901 `pointer`. An empty pointer hashes the whole original
@@ -175,9 +177,14 @@ artifact's raw bytes; an explicit pointer must select an original source string,
 whose exact UTF-8 bytes are hashed. The owning host independently reads that
 artifact and verifies canonical source identity. `capture --source-artifact-ref
 REF [--source-pointer /description]` records this selector and applies it to the
-local `--source` file. Do not guess a normalization or omit source constraints
-by choosing a narrower field than the original authorized scope. Current reports
-must preserve the supplied selector and reconciliation provenance. It uses an isolated Git index for dirty content and never switches the
+local `--source` file. The original caller, never the verifier, selects the
+pointer. Issue-driven hosts bind the complete trusted original brief's raw bytes,
+including acceptance criteria and constraints. Do not guess a normalization or
+omit source constraints by choosing a narrower field than the original authorized
+scope. Current reports must preserve the supplied selector and reconciliation
+provenance.
+
+The helper uses an isolated Git index for dirty content and never switches the
 user's checkout. A checkpoint ref/digest supplied by an existing workspace owner
 may be used instead. Keep the original base/source revision, candidate revision,
 and publication branch distinct in the report.
@@ -194,6 +201,12 @@ subject content, referenced bytes and freshness independently; newly added
 inventory need not rerun eleven genuinely passed rows to collect a twelfth proof.
 Reevaluate actual observations under a changed policy rather than rerunning an
 unchanged workload when those observations still prove the new obligation.
+Rows named by either remaining-work ID field are not reusable, even if also
+marked `VERIFIED`; an opaque-only gap reference cannot certify partial passes.
+Current handoffs use canonical primary `requirement` IDs; if `requirementIds` is
+also present it must include that primary ID. Narrative belongs in `remainingWork`.
+A validated exact previous/current scope reconciliation can retain unchanged
+rows after inherited IDs are retired, but never reuses the historical aggregate.
 Legacy coverage may yield `candidateRows` solely as artifacts to inspect, never
 accepted proof. Neither partial result means aggregate success or issue closure.
 
