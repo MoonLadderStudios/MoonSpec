@@ -76,6 +76,7 @@ Read:
 - `tasks.md`: phases, task IDs, dependencies, parallel markers, file paths, tests, implementation tasks.
 - `AGENTS.md` when present: project principles, repo constraints, and test discipline.
 - optional docs listed by the prerequisite script when findings refer to them.
+- Markdown checklists under `FEATURE_DIR/checklists/` when present; the prerequisite script does not list them in `AVAILABLE_DOCS`.
 
 Also inspect relevant repository files when needed to resolve uncertainty, especially test framework configuration, project layout, existing contracts, and naming conventions.
 
@@ -184,6 +185,7 @@ After editing:
    - test tasks cover required unit and integration behavior where applicable
    - no unresolved applicable `AGENTS.md` conflict remains after honoring explicit task overrides
    - no unresolved placeholders remain unless explicitly intentional and explained
+   - feature checklists remain consistent with the updated artifacts; do not mark unverified work complete
    - task ordering is coherent and coverage is complete for the bounded scope before handoff; repair partial task lists during alignment
 4. Run lightweight repository tests or formatting commands when the edits touched generated checks, test commands, or machine-readable contracts. If no relevant command exists, say so.
 
