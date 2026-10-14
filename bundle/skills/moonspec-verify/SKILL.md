@@ -238,7 +238,7 @@ Classify gaps separately:
 - Verification gaps mean tests, command evidence, or inspection evidence are missing or insufficient.
 - Doc drift means verified behavior contradicts, supersedes, or reveals ambiguity in the canonical source document.
 
-Doc drift alone does not block `FULLY_IMPLEMENTED` when implementation behavior and required verification are correct for the agreed story scope. In that case, set the claim's drift status and also record the structured drift in Source Document Drift.
+Record source drift in the report; required in-scope documentation corrections are ordinary remaining implementation work.
 
 Use durable evidence references instead of pasting large source, code, test, artifact, or log content into the report.
 
