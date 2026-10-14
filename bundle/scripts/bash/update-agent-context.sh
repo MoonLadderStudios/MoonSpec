@@ -331,7 +331,16 @@ agent_file_accepts_plan_history() {
     local target_file="$1"
     local logical_target_file="${2:-$target_file}"
     [[ "$(basename "$logical_target_file")" != "AGENTS.md" ]] && \
-        [[ "$(basename "$target_file")" != "AGENTS.md" ]]
+        [[ "$(basename "$target_file")" != "AGENTS.md" ]] || return 1
+
+    # A targeted update can reach AGENTS through a sibling alias without ever
+    # visiting the logical AGENTS entry in update_all_existing_agents.
+    if [[ -e "$AGENTS_FILE" || -L "$AGENTS_FILE" ]]; then
+        local agents_target
+        agents_target=$(resolve_agent_file "$AGENTS_FILE") || return 1
+        [[ "$target_file" != "$agents_target" ]] || return 1
+    fi
+    return 0
 }
 
 create_new_agent_file() {

@@ -209,14 +209,18 @@ def test_authorized_update_preserves_symlink_and_target_metadata(
 
 
 @pytest.mark.parametrize("logical_agents", [True, False])
-def test_shared_guidance_preserves_agents_identity(tmp_path, projected, logical_agents):
+@pytest.mark.parametrize("agent", [(), ("claude",), ("gemini",)])
+def test_shared_guidance_preserves_agents_identity(
+    tmp_path, projected, logical_agents, agent
+):
     root = consumer(tmp_path, projected)
     target = root / ("context.md" if logical_agents else "AGENTS.md")
     target.write_text(GUIDANCE)
     if logical_agents:
         (root / "AGENTS.md").symlink_to("context.md")
     (root / "CLAUDE.md").symlink_to(target.name)
-    result = run(root, "update-agent-context.sh", "--write")
+    (root / "GEMINI.md").symlink_to(target.name)
+    result = run(root, "update-agent-context.sh", "--write", *agent)
     assert result.returncode == 0, result.stderr
     assert (root / "CLAUDE.md").is_symlink()
     assert target.read_text() == GUIDANCE
