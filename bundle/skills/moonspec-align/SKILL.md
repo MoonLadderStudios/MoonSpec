@@ -87,13 +87,14 @@ Build an internal model before editing:
 - User-story inventory with acceptance scenarios and edge cases.
 - Task coverage mapping from task IDs to requirements, scenarios, success criteria, and design artifacts.
 - Artifact authority order:
-  1. Applicable `AGENTS.md` requirements and explicit task-authorized behavior changes.
-  2. Source design requirements adopted by the task.
-  3. Original feature input preserved in `spec.md`.
-  4. `spec.md` user-visible behavior and acceptance criteria.
-  5. `plan.md` architecture and technical decisions.
-  6. Design artifacts such as contracts, data model, research, and quickstart.
-  7. `tasks.md` execution breakdown.
+  1. Explicit task-authorized behavior changes.
+  2. Applicable `AGENTS.md` requirements.
+  3. Source design requirements adopted by the task.
+  4. Original feature input preserved in `spec.md`.
+  5. `spec.md` user-visible behavior and acceptance criteria.
+  6. `plan.md` architecture and technical decisions.
+  7. Design artifacts such as contracts, data model, research, and quickstart.
+  8. `tasks.md` execution breakdown.
 - Project context: language, frameworks, test tools, existing file structure, and conventions.
 
 ## Detection Passes
@@ -129,7 +130,7 @@ Use this decision process:
 Default choices:
 
 - If `tasks.md` conflicts with `spec.md`, update `tasks.md` unless the spec is clearly incomplete relative to the original input.
-- If `plan.md` conflicts with an explicit source design requirement or relevant `AGENTS.md` principle, update `plan.md`.
+- If `plan.md` conflicts with a source design requirement or `AGENTS.md`, preserve a change explicitly authorized by the task; otherwise update `plan.md` to match the adopted requirements.
 - If `spec.md` is ambiguous but the repo has a clear established convention, update `spec.md` with that convention as an assumption or measurable requirement.
 - If two options are equally plausible and neither is required by higher authority, choose the simpler and more reversible option.
 - If a finding cannot be remediated without inventing product scope, add a bounded assumption and a validation task instead of asking the user.
@@ -143,7 +144,7 @@ Prefer these remediation patterns:
 - Merge duplicate requirements and update downstream references.
 - Replace vague adjectives with measurable, testable criteria when context supports a defensible threshold.
 - Add missing acceptance criteria for already-implied behavior.
-- Add tasks for uncovered requirements, edge cases, contracts, and buildable success criteria.
+- Add tasks for uncovered requirements, edge cases, contracts, buildable success criteria, and required in-scope documentation corrections; check that those tasks cover the identified gaps before handing off to implementation.
 - Add or reorder test tasks so tests precede implementation when the workflow requires test-first development.
 - Align terminology across artifacts with the term used by the highest-authority artifact.
 - Update `quickstart.md` so it validates the same story, contracts, and test commands represented by `tasks.md`.
