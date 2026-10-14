@@ -29,3 +29,10 @@ def test_verify_command_does_not_preflight_require_feature_artifacts() -> None:
     assert "original instructions or authoritative declarative source" in text
     assert "Do not require `spec.md`, `plan.md`, or `tasks.md`" in text
     assert "--require-tasks" not in text
+
+
+def test_browser_exception_honors_applicable_agent_guidance_without_promoting_docs():
+    for path in ("SKILL.md", "references/acceptance-policy.md"):
+        text = " ".join((BUNDLE / "skills/moonspec-verify" / path).read_text().split())
+        assert "applicable root or scoped `AGENTS.md` instructions" in text
+        assert "Merely naming a browser suite" in text
