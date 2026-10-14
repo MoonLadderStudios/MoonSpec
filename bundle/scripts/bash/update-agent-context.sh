@@ -394,13 +394,25 @@ is_manual_additions_start() {
     [[ "$1" == "<!-- MANUAL ADDITIONS START -->" ]]
 }
 
-agent_file_is_protected() {
+agent_file_is_protected() (
     local target_file="$1"
     local logical_target_file="$2"
-    [[ "${logical_target_file##*/}" == "AGENTS.md" ]] ||
+    # Scope case-insensitive matching to this predicate. Filesystem identity
+    # handles existing aliases, including hard links and case-insensitive disks.
+    shopt -s nocasematch
+    if [[ "${logical_target_file##*/}" == "AGENTS.md" ]] ||
         [[ "${target_file##*/}" == "AGENTS.md" ]] ||
-        [[ "$target_file" == "$AGENTS_RESOLVED_TARGET" ]]
-}
+        [[ "$target_file" -ef "$AGENTS_RESOLVED_TARGET" ]]; then
+        return 0
+    fi
+    if [[ -e "$target_file" && -e "$AGENTS_RESOLVED_TARGET" ]]; then
+        return 1  # Existing, demonstrably distinct files remain independent.
+    fi
+    # An absent target has no filesystem identity. Conservatively skip optional
+    # plan-context writes through case-only aliases, without probing the disk or
+    # creating unrelated paths just to decide whether guidance is protected.
+    [[ "$target_file" == "$AGENTS_RESOLVED_TARGET" ]]
+)
 
 create_new_agent_file() {
     local target_file="$1"
@@ -691,7 +703,7 @@ update_agent_file() {
     resolve_agent_file "$target_file" || return 1
     target_file="$RESOLVED_AGENT_FILE"
     if agent_file_is_protected "$target_file" "$logical_target_file"; then
-        log_info "Skipping protected AGENTS guidance; plan-derived content stays in plan.md: $logical_target_file"
+        log_info "Skipping protected AGENTS guidance or an ambiguous alias; plan-derived content stays in plan.md: $logical_target_file"
         return 0
     fi
     if [[ -e "$target_file" && ! -f "$target_file" ]]; then

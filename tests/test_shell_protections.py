@@ -474,3 +474,65 @@ def test_directory_symlinks_precede_dotdot_identity_normalization(
     else:
         assert "Python 3.12 + pytest" in target.read_text()
         assert (root / "CLAUDE.md").read_text() == target.read_text()
+
+
+@pytest.mark.parametrize("agent", [(), ("claude",), ("gemini",)])
+@pytest.mark.parametrize("existing", ["neither", "protected", "candidate"])
+@pytest.mark.parametrize("directory", [False, True])
+def test_case_ambiguous_protected_alias_is_skipped_without_creating_paths(
+    tmp_path, projected, agent, existing, directory
+):
+    root = consumer(tmp_path, projected)
+    protected = root / ("policy/context.md" if directory else "context.md")
+    candidate = root / ("POLICY/CONTEXT.md" if directory else "CONTEXT.md")
+    if existing != "neither":
+        target = protected if existing == "protected" else candidate
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(GUIDANCE)
+    (root / "AGENTS.md").symlink_to(protected.relative_to(root))
+    (root / "CLAUDE.md").symlink_to(candidate.relative_to(root))
+    (root / "GEMINI.md").symlink_to(candidate.relative_to(root))
+    before = sorted(str(path.relative_to(root)) for path in root.rglob("*"))
+    result = run(root, "update-agent-context.sh", "--write", *agent)
+    assert result.returncode == 0, result.stderr
+    assert "Skipping protected AGENTS guidance" in result.stdout
+    assert sorted(str(path.relative_to(root)) for path in root.rglob("*")) == before
+    for path in (protected, candidate):
+        if path.exists():
+            assert path.read_text() == GUIDANCE
+
+
+@pytest.mark.parametrize("agent", [(), ("claude",), ("gemini",)])
+@pytest.mark.parametrize("same_file", [True, False])
+def test_existing_protected_aliases_use_filesystem_identity(
+    tmp_path, projected, agent, same_file
+):
+    root = consumer(tmp_path, projected)
+    protected = root / "context.md"
+    candidate = root / "CONTEXT.md"
+    protected.write_text(GUIDANCE)
+    if candidate.exists():
+        if not same_file:
+            pytest.skip("Distinct case-only files require a case-sensitive filesystem")
+    elif same_file:
+        candidate.hardlink_to(protected)
+    else:
+        candidate.write_text(GUIDANCE)
+    (root / "AGENTS.md").symlink_to(protected.name)
+    (root / "CLAUDE.md").symlink_to(candidate.name)
+    (root / "GEMINI.md").symlink_to(candidate.name)
+    before = protected.stat()
+    result = run(root, "update-agent-context.sh", "--write", *agent)
+    assert result.returncode == 0, result.stderr
+    assert protected.read_text() == GUIDANCE
+    after = protected.stat()
+    for attribute in ("st_dev", "st_ino", "st_nlink", "st_mode", "st_mtime_ns"):
+        assert getattr(after, attribute) == getattr(before, attribute)
+    if same_file:
+        assert candidate.samefile(protected)
+        assert candidate.read_text() == GUIDANCE
+        assert "Skipping protected AGENTS guidance" in result.stdout
+    else:
+        assert "Python 3.12 + pytest" in candidate.read_text()
+    assert (root / "CLAUDE.md").is_symlink()
+    assert (root / "GEMINI.md").is_symlink()
