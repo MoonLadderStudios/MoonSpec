@@ -2,7 +2,7 @@
 
 MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to Spec-Driven Development:
 
-1. Maintain declarative, desired-state documents as the primary source of truth
+1. Keep useful docs accurate in the same change; the current task and applicable AGENTS.md set requirements
 2. Breakdown declarative documents into one or more stories
 3. Implement one story at a time (not 3+)
 4. Generate imperative plans and tasks only as temporary artifacts
@@ -72,7 +72,7 @@ The validator checks exported file existence, skill front matter, OpenAI wrapper
 
 ## Projection
 
-MoonMind consumes this repository as a pinned git submodule at `vendor/moonspec`.
+MoonMind consumes this repository as a pinned git submodule at `moonspec`.
 
 For a consumer checkout, project the bundle with:
 
@@ -81,7 +81,7 @@ python tools/project_bundle.py --target /path/to/consumer --projection moonmind 
 python tools/project_bundle.py --target /path/to/consumer --projection moonmind --check
 ```
 
-MoonMind has its own wrapper around this projection so it can add generated-file headers and enforce consumer-specific drift checks.
+Both projection entrypoints check for retired files in the bundle's skill and command namespaces; `--write` removes them while preserving custom assets outside those namespaces. Output scopes must be real directories within the consumer. MoonMind's wrapper adds its consumer-specific checks.
 
 ## CLI
 
