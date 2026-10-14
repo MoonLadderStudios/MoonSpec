@@ -147,7 +147,7 @@ if $JSON_MODE; then
         json_docs=$(printf '"%s",' "${docs[@]}")
         json_docs="[${json_docs%,}]"
     fi
-    
+
     printf '{"FEATURE_DIR":"%s","AVAILABLE_DOCS":%s}\n' "$FEATURE_DIR" "$json_docs"
 else
     # Text output
