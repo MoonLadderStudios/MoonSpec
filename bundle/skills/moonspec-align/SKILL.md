@@ -87,9 +87,9 @@ Build an internal model before editing:
 - User-story inventory with acceptance scenarios and edge cases.
 - Task coverage mapping from task IDs to requirements, scenarios, success criteria, and design artifacts.
 - Artifact authority order:
-  1. The current task and applicable `AGENTS.md` requirements.
-  2. Original feature input preserved in `spec.md`, including explicitly authorized behavior changes.
-  3. Source design requirements adopted by the task.
+  1. Applicable `AGENTS.md` requirements and explicit task-authorized behavior changes.
+  2. Source design requirements adopted by the task.
+  3. Original feature input preserved in `spec.md`.
   4. `spec.md` user-visible behavior and acceptance criteria.
   5. `plan.md` architecture and technical decisions.
   6. Design artifacts such as contracts, data model, research, and quickstart.
