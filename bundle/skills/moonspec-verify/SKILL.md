@@ -345,9 +345,11 @@ classify the environment according to `AGENTS.md`.
 ### Browser-independent verification
 
 Apply the acceptance policy's browser-independent defaults in every mode. Browser
-checks are optional diagnostics unless the controlling source or caller
-explicitly requires a browser acceptance gate or human visual signoff for this
-verification run. Preserve that explicit authority. Missing browsers, Playwright,
+checks are optional diagnostics unless the controlling source, caller, or
+applicable root or scoped `AGENTS.md` instructions explicitly require a browser
+acceptance gate or human visual signoff for this verification run. Preserve that
+explicit authority. Merely naming a browser suite in guidance or generic docs
+does not make it an acceptance requirement. Missing browsers, Playwright,
 browser installation, screenshots, live UI access, or human visual review must never
 block the default verifier or fail its workflow. Record unavailable browser
 checks as advisory `NOT RUN`; do not put them in Remaining Work or choose a

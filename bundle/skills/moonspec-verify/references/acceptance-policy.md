@@ -45,8 +45,9 @@ optional MoonSpec packet is not a gap when a usable original baseline exists.
 
 Browser execution, browser installation, live UI access, screenshots, and human
 visual signoff are optional diagnostics by default, including for frontend and
-UI changes. These defaults apply when the controlling source has no explicit
-browser or human visual acceptance requirement. The need for a browser must
+UI changes. These defaults apply when the controlling source, caller, and applicable
+root or scoped `AGENTS.md` instructions have no explicit browser or human visual
+acceptance requirement. The need for a browser must
 never block verification or fail a workflow under these defaults. An unavailable
 browser is `NOT RUN` with an advisory limitation, never by itself Remaining Work,
 `ADDITIONAL_WORK_NEEDED`,
@@ -64,8 +65,9 @@ Merely naming a browser suite in repository guidance, a source document, a
 derived plan, or an earlier report does not make browser execution mandatory.
 Apply this default to the evidence method while preserving the underlying
 behavior to prove. An explicit acceptance requirement in the original
-implementation instructions, selected canonical source, or caller instruction
-for this verification run requires that evidence. Preserve explicitly required
+implementation instructions, selected canonical source, caller instruction, or
+applicable root or scoped `AGENTS.md` instructions for this verification run
+requires that evidence. Preserve explicitly required
 human visual signoff and its authority; automated evidence cannot replace it.
 Disclose the requirement and its exact source; otherwise use the non-browser
 path and record any limits of the evidence honestly.

@@ -504,12 +504,13 @@ def test_case_ambiguous_protected_alias_is_skipped_without_creating_paths(
 
 @pytest.mark.parametrize("agent", [(), ("claude",), ("gemini",)])
 @pytest.mark.parametrize("same_file", [True, False])
+@pytest.mark.parametrize("names", [("context.md", "CONTEXT.md"), ("AGENTS.md", "agents.md")])
 def test_existing_protected_aliases_use_filesystem_identity(
-    tmp_path, projected, agent, same_file
+    tmp_path, projected, agent, same_file, names
 ):
     root = consumer(tmp_path, projected)
-    protected = root / "context.md"
-    candidate = root / "CONTEXT.md"
+    protected = root / names[0]
+    candidate = root / names[1]
     protected.write_text(GUIDANCE)
     if candidate.exists():
         if not same_file:
@@ -518,7 +519,8 @@ def test_existing_protected_aliases_use_filesystem_identity(
         candidate.hardlink_to(protected)
     else:
         candidate.write_text(GUIDANCE)
-    (root / "AGENTS.md").symlink_to(protected.name)
+    if protected.name != "AGENTS.md":
+        (root / "AGENTS.md").symlink_to(protected.name)
     (root / "CLAUDE.md").symlink_to(candidate.name)
     (root / "GEMINI.md").symlink_to(candidate.name)
     before = protected.stat()
