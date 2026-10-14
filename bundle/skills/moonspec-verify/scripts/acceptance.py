@@ -40,7 +40,7 @@ def _unverified(row: dict) -> bool:
     and who could; it carries no evidence refs."""
     unverified = row.get("unverified")
     return (
-        not row.get("evidenceRefs")
+        row.get("evidenceRefs", []) == []
         and isinstance(unverified, dict)
         and all(
             isinstance(unverified.get(key), str) and unverified[key].strip()
@@ -50,7 +50,7 @@ def _unverified(row: dict) -> bool:
 
 
 def _evidenced_or_unverified(row: dict) -> bool:
-    if "unverified" in row:
+    if row.get("unverified") is not None:
         return _unverified(row)
     return nonblank_strings(row.get("evidenceRefs"))
 
