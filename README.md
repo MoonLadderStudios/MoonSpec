@@ -9,9 +9,8 @@ MoonSpec is a fork of GitHub Spec Kit with an opinionated approach to Spec-Drive
 5. Implement code using Test-Driven Development (TDD)
 6. Aim to create both integration tests and unit tests
 7. Use the verify skill to enable a corrective loop with a quality gate
-8. Use the doc-reconcile skill when the document is impossible, unclear, or inconsistent
-9. Keep constitution-like guidance in AGENTS.md
-10. Chain all of the implementation steps with an orchestrate skill
+8. Keep constitution-like guidance in AGENTS.md
+9. Chain all of the implementation steps with an orchestrate skill
 
 Note that for chaining steps, an orchestration tool like [MoonMind](https://github.com/MoonLadderStudios/MoonMind) is recommended because it improves context management and the resilience of failed steps.
 
@@ -30,8 +29,7 @@ The main lifecycle is:
 5. `/moonspec.align` for artifact consistency repair.
 6. `/moonspec.implement` for implementation.
 7. `/moonspec.verify` as the final read-only completion gate.
-8. `/moonspec.doc-reconcile` after successful verification when canonical docs need updates.
-9. `/moonspec.orchestrate` to coordinate the lifecycle for a preselected one-story request.
+8. `/moonspec.orchestrate` to coordinate the lifecycle for a preselected one-story request.
 
 ## Bundle Layout
 

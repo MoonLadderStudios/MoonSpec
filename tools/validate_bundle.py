@@ -169,7 +169,6 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
             "align",
             "implement",
             "verify",
-            "doc-reconcile",
             "orchestrate",
         )
     }

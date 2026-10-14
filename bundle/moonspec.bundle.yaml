@@ -42,10 +42,6 @@ exports:
       path: skills/moonspec-verify/SKILL.md
       wrappers:
         openai: skills/moonspec-verify/agents/openai.yaml
-    - id: moonspec-doc-reconcile
-      path: skills/moonspec-doc-reconcile/SKILL.md
-      wrappers:
-        openai: skills/moonspec-doc-reconcile/agents/openai.yaml
     - id: moonspec-orchestrate
       path: skills/moonspec-orchestrate/SKILL.md
       wrappers:
@@ -108,11 +104,6 @@ exports:
       markdown: commands/markdown/moonspec.verify.md
       gemini: commands/gemini/moonspec.verify.toml
       skill: moonspec-verify
-    - id: moonspec.doc-reconcile
-      slashCommand: /moonspec.doc-reconcile
-      markdown: commands/markdown/moonspec.doc-reconcile.md
-      gemini: commands/gemini/moonspec.doc-reconcile.toml
-      skill: moonspec-doc-reconcile
     - id: moonspec.orchestrate
       slashCommand: /moonspec.orchestrate
       markdown: commands/markdown/moonspec.orchestrate.md
