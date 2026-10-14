@@ -129,8 +129,7 @@ Use this decision process:
 
 Default choices:
 
-- If `tasks.md` conflicts with `spec.md`, update `tasks.md` unless the spec is clearly incomplete relative to the original input.
-- If `plan.md` conflicts with a source design requirement or `AGENTS.md`, preserve a change explicitly authorized by the task; otherwise update `plan.md` to match the adopted requirements.
+- Resolve task, spec, plan, and source conflicts using the artifact authority order above. Bring stale upstream artifacts into line with an explicitly task-authorized change before aligning downstream artifacts; otherwise use the adopted requirements.
 - If `spec.md` is ambiguous but the repo has a clear established convention, update `spec.md` with that convention as an assumption or measurable requirement.
 - If two options are equally plausible and neither is required by higher authority, choose the simpler and more reversible option.
 - If a finding cannot be remediated without inventing product scope, add a bounded assumption and a validation task instead of asking the user.
@@ -180,12 +179,12 @@ After editing:
 1. Rerun the prerequisite script.
 2. Rebuild the analysis model.
 3. Verify:
-   - every functional requirement has task coverage
+   - every adopted in-scope source requirement maps to a functional requirement and a task, and every functional requirement has task coverage
    - every buildable success criterion has task or quickstart coverage
    - test tasks cover required unit and integration behavior where applicable
-   - no relevant `AGENTS.md` `MUST` conflict remains
+   - no unresolved applicable `AGENTS.md` conflict remains after honoring explicit task overrides
    - no unresolved placeholders remain unless explicitly intentional and explained
-   - task ordering is coherent
+   - task ordering is coherent and coverage is complete for the bounded scope before handoff; repair partial task lists during alignment
 4. Run lightweight repository tests or formatting commands when the edits touched generated checks, test commands, or machine-readable contracts. If no relevant command exists, say so.
 
 ## Report
