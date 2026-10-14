@@ -320,27 +320,55 @@ def _scope_allows_partial(prior: object, current: dict) -> bool:
     )
 
 
-def _blocking_requirement_ids(report: dict) -> set[str] | None:
-    """Conservatively retain both identifier fields; opaque gaps remain unknown."""
+def _normalized_remaining_work(
+    report: dict, scope: dict, subject: dict
+) -> tuple[set[str], list[str]]:
+    """Validate one complete source-linked handoff for both judgment and reuse.
+
+    Callers choose the independently established scope: current judgments use
+    current scope; partial reuse uses the historical binding only after exact
+    source/reconciliation lineage has been checked. A malformed handoff never
+    means an empty blocker set.
+    """
+    verdict = report.get("verdict")
+    if not isinstance(verdict, str) or verdict not in {
+        "FULLY_IMPLEMENTED",
+        "ADDITIONAL_WORK_NEEDED",
+        "NO_DETERMINATION",
+        "BLOCKED",
+    }:
+        return set(), ["remaining work has no canonical verification verdict"]
+    required = scope.get("requirementIds")
+    if not nonblank_strings(required) or len(set(required)) != len(required):
+        return set(), ["remaining work requires unique mandatory source IDs"]
     work = report.get("remainingWork")
-    if not work:
-        if report.get("verdict") != "FULLY_IMPLEMENTED" or report.get(
-            "remainingWorkRef"
-        ):
-            return None
-        return set()
-    if not isinstance(work, list):
-        return None
-    ids = set()
+    reference = report.get("remainingWorkRef")
+    if reference is not None and not _text(reference):
+        return set(), ["remaining work reference must be a nonblank artifact reference"]
+    if work is None or work == []:
+        if verdict == "FULLY_IMPLEMENTED" and not reference:
+            return set(), []
+        return set(), ["non-passing report needs inline source-linked remaining work"]
+    if not _valid_remaining_work(work):
+        return set(), ["remaining work must be a complete actionable inline handoff"]
+    errors = []
+    gaps = set()
     for item in work:
-        if not isinstance(item, dict) or not _text(item.get("requirement")):
-            return None
-        ids.add(item["requirement"])
-        if "requirementIds" in item:
-            if not nonblank_strings(item["requirementIds"]):
-                return None
-            ids.update(item["requirementIds"])
-    return ids
+        ids = item.get("requirementIds", [item["requirement"]])
+        if (
+            not nonblank_strings(ids)
+            or len(set(ids)) != len(ids)
+            or item["requirement"] not in ids
+            or not set(ids) <= set(required)
+        ):
+            errors.append(
+                "remaining work must consistently name mandatory requirements in the report source scope"
+            )
+        else:
+            gaps.update(ids)
+        if "candidate" in item and item["candidate"] != subject:
+            errors.append("remaining work refers to a different candidate")
+    return gaps, errors
 
 
 def _source_bound(report: dict, current: dict) -> bool:
@@ -586,8 +614,10 @@ def _reusable_rows(
     if not isinstance(rows, list):
         return []
     ids = [row.get("requirementId") for row in rows if isinstance(row, dict)]
-    blocked = _blocking_requirement_ids(report)
-    if blocked is None:
+    blocked, handoff_errors = _normalized_remaining_work(
+        report, binding["scope"], binding["subject"]
+    )
+    if handoff_errors:
         return []
     result = []
     for row in rows:
@@ -714,6 +744,11 @@ def reuse(report: dict, current: dict, *, now: datetime | None = None) -> dict:
         if strict:
             errors = _strict_errors(report, current, exact=False, now=now)
             binding = report.get("validatedRefs", {}).get("acceptance", {})
+            if not errors:
+                _, handoff_errors = _normalized_remaining_work(
+                    report, current["scope"], current["subject"]
+                )
+                errors.extend(handoff_errors)
             rows = binding.get("evidence", [])
             if not isinstance(rows, list):
                 errors.append("requirement evidence rows are malformed")
@@ -894,25 +929,8 @@ def _current_nonpassing_errors(report: dict, current: dict) -> list[str]:
     if not isinstance(scope, dict) or binding.get("scope") != scope:
         errors.append("non-passing report is not bound to the current source scope")
         return errors
-    work = report.get("remainingWork")
-    if not _valid_remaining_work(work):
-        return errors + ["non-passing report needs inline source-linked remaining work"]
-    required = scope.get("requirementIds", [])
-    if not nonblank_strings(required):
-        return errors + ["current scope lacks mandatory source IDs"]
-    for item in work:
-        ids = item.get("requirementIds", [item.get("requirement")])
-        if (
-            not nonblank_strings(ids)
-            or len(set(ids)) != len(ids)
-            or item.get("requirement") not in ids
-            or not set(ids) <= set(required)
-        ):
-            errors.append(
-                "remaining work must name a mandatory requirement in current source scope"
-            )
-        if "candidate" in item and item["candidate"] != subject:
-            errors.append("remaining work refers to a different candidate")
+    _, handoff_errors = _normalized_remaining_work(report, scope, subject)
+    errors.extend(handoff_errors)
     return errors
 
 
@@ -990,15 +1008,10 @@ def validate_report(report: object, current: dict | None = None) -> dict:
                     for row in rows:
                         errors.extend(_row_errors(row, binding, current))
                     if verdict != "FULLY_IMPLEMENTED":
-                        work = report.get("remainingWork", [])
-                        gaps = set()
-                        if _valid_remaining_work(work):
-                            for item in work:
-                                values = item.get(
-                                    "requirementIds", [item.get("requirement")]
-                                )
-                                if nonblank_strings(values):
-                                    gaps.update(values)
+                        gaps, handoff_errors = _normalized_remaining_work(
+                            report, current["scope"], current["subject"]
+                        )
+                        errors.extend(handoff_errors)
                         passed = {
                             row["requirementId"]
                             for row in rows

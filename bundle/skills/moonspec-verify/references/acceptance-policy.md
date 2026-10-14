@@ -203,7 +203,12 @@ Reevaluate actual observations under a changed policy rather than rerunning an
 unchanged workload when those observations still prove the new obligation.
 Rows named by either remaining-work ID field are not reusable, even if also
 marked `VERIFIED`; a nonpass with absent/empty inline gaps or an opaque-only gap
-reference cannot certify partial passes.
+reference cannot certify partial passes. Judgment and reuse share the same
+normalized handoff validation: unknown/optional IDs, contradictory ID fields,
+missing actionable fields, and wrong-candidate gaps are report errors, never an
+empty blocker set. Historical gaps use their own verified source scope only after
+exact current reconciliation lineage is established, so a correctly retired
+inherited obligation does not discard unrelated executed proof.
 Current handoffs use canonical primary `requirement` IDs; if `requirementIds` is
 also present it must include that primary ID. Narrative belongs in `remainingWork`.
 A validated exact previous/current scope reconciliation can retain unchanged

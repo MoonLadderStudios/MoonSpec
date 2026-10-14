@@ -1026,3 +1026,143 @@ def test_unexplained_nonpass_cannot_certify_partial_rows(bound, verdict, work):
     result = acceptance.reuse(report, current)
     assert not result["reusable"] and not result["completionEligible"]
     assert result["reusableRows"] == []
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "unknown",
+        "optional",
+        "separate_release",
+        "unknown_in_list",
+        "conflicting_ids",
+        "duplicate_ids",
+        "empty_ids",
+        "scalar_ids",
+        "missing_primary",
+        "narrative_primary",
+        "missing_gap_type",
+        "blank_gap_type",
+        "missing_work",
+        "blank_work",
+        "malformed_item",
+        "wrong_candidate",
+        "mixed_unknown",
+        "unknown_verdict",
+    ],
+)
+def test_invalid_source_linked_handoff_never_certifies_partial_rows(bound, change):
+    report, current = two_bound_rows(bound)
+    binding = report["validatedRefs"]["acceptance"]
+    binding["evidence"] = binding["evidence"][:1]
+    gap = {
+        "requirement": "AC-2",
+        "gapType": "verification",
+        "remainingWork": "Collect the required second proof",
+    }
+    report.update(
+        verdict="BLOCKED", recommendedNextAction="blocked", remainingWork=[gap]
+    )
+    if change == "unknown":
+        gap["requirement"] = "UNSOURCED"
+    elif change in {"optional", "separate_release"}:
+        plan = {
+            **copy.deepcopy(current["verificationMap"][0]),
+            "id": "DIAGNOSTIC",
+            "classification": change,
+        }
+        current["verificationMap"].append(plan)
+        binding["verificationMap"].append(copy.deepcopy(plan))
+        gap["requirement"] = "DIAGNOSTIC"
+    elif change == "unknown_in_list":
+        gap["requirementIds"] = ["AC-2", "UNSOURCED"]
+    elif change == "conflicting_ids":
+        gap["requirementIds"] = ["AC-1"]
+    elif change == "duplicate_ids":
+        gap["requirementIds"] = ["AC-2", "AC-2"]
+    elif change == "empty_ids":
+        gap["requirementIds"] = []
+    elif change == "scalar_ids":
+        gap["requirementIds"] = "AC-2"
+    elif change == "missing_primary":
+        del gap["requirement"]
+    elif change == "narrative_primary":
+        gap.update(requirement="AC-2 is the missing check", requirementIds=["AC-2"])
+    elif change == "missing_gap_type":
+        del gap["gapType"]
+    elif change == "blank_gap_type":
+        gap["gapType"] = " "
+    elif change == "missing_work":
+        del gap["remainingWork"]
+    elif change == "blank_work":
+        gap["remainingWork"] = " "
+    elif change == "malformed_item":
+        report["remainingWork"].append(None)
+    elif change == "wrong_candidate":
+        gap["candidate"] = {**current["subject"], "revision": "different-head"}
+    elif change == "mixed_unknown":
+        report["remainingWork"].append({**gap, "requirement": "UNSOURCED"})
+    else:
+        report["verdict"] = "UNKNOWN"
+    assert not acceptance.validate_report(report, current)["valid"]
+    result = acceptance.reuse(report, current)
+    assert not result["reusable"] and not result["completionEligible"]
+    assert result["reusableRows"] == []
+
+
+def test_source_linked_partial_handoff_retains_only_valid_passed_row(bound):
+    report, current = two_bound_rows(bound)
+    binding = report["validatedRefs"]["acceptance"]
+    binding["evidence"] = binding["evidence"][:1]
+    report.update(
+        verdict="BLOCKED",
+        recommendedNextAction="blocked",
+        remainingWork=[
+            {
+                "requirement": "AC-2",
+                "requirementIds": ["AC-2"],
+                "gapType": "verification",
+                "remainingWork": "Collect the required second proof",
+                "candidate": copy.deepcopy(current["subject"]),
+            }
+        ],
+    )
+    assert acceptance.validate_report(report, current)["valid"]
+    assert [
+        r["requirementId"] for r in acceptance.reuse(report, current)["reusableRows"]
+    ] == ["AC-1"]
+
+
+def test_reconciled_removed_gap_uses_historical_source_scope_not_unknown_scope(bound):
+    report, current = reconciled_rows(bound)
+    report["validatedRefs"]["acceptance"]["evidence"] = report["validatedRefs"][
+        "acceptance"
+    ]["evidence"][:1]
+    report.update(
+        verdict="BLOCKED",
+        recommendedNextAction="blocked",
+        remainingWork=[
+            {
+                "requirement": "AC-2",
+                "gapType": "environment",
+                "remainingWork": "Inherited physical event unavailable",
+            }
+        ],
+    )
+    assert not acceptance.validate_report(report, current)["valid"]
+    result = acceptance.reuse(report, current)
+    assert not result["reusable"] and not result["completionEligible"]
+    assert [row["requirementId"] for row in result["reusableRows"]] == ["AC-1"]
+    del current["scopeReconciliation"]
+    assert acceptance.reuse(report, current)["reusableRows"] == []
+
+
+@pytest.mark.parametrize("reference", ["", " ", [], {}, 0, False])
+def test_malformed_gap_reference_is_never_an_empty_success_or_valid_partial_handoff(
+    bound, reference
+):
+    report, current = bound
+    report["remainingWorkRef"] = reference
+    assert not acceptance.validate_report(report, current)["valid"]
+    result = acceptance.reuse(report, current)
+    assert not result["reusable"] and result["reusableRows"] == []
