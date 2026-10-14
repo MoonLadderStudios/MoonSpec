@@ -36,6 +36,26 @@ def nonblank_strings(value: object) -> bool:
     )
 
 
+def _unverified(row: dict) -> bool:
+    """An Unverified record says why the verifier could not check a criterion
+    and who could; it carries no evidence refs."""
+    unverified = row.get("unverified")
+    return (
+        not row.get("evidenceRefs")
+        and isinstance(unverified, dict)
+        and all(
+            isinstance(unverified.get(key), str) and unverified[key].strip()
+            for key in ("reason", "verifiableBy")
+        )
+    )
+
+
+def _evidenced_or_unverified(row: dict) -> bool:
+    if "unverified" in row:
+        return _unverified(row)
+    return nonblank_strings(row.get("evidenceRefs"))
+
+
 def capture(
     repo: Path, repository: str, target: str, *, target_mode: bool = False
 ) -> dict:
@@ -755,7 +775,10 @@ def reuse(report: dict, current: dict, *, now: datetime | None = None) -> dict:
             elif not errors:
                 for row in rows:
                     errors.extend(_row_errors(row, binding, current))
-                    if isinstance(row, dict) and row.get("status") != "VERIFIED":
+                    if isinstance(row, dict) and not (
+                        row.get("status") == "VERIFIED"
+                        or (row.get("status") == "UNVERIFIED" and _unverified(row))
+                    ):
                         errors.append("mandatory requirement is not verified")
             result["reasons"].extend(errors)
             result["reusable"] = not result["reasons"]
@@ -813,7 +836,7 @@ def _reuse(report: dict, current: dict, *, now: datetime | None = None) -> dict:
         not nonblank_strings(required)
         or len(set(required)) != len(required)
         or sorted(row.get("requirementId", "") for row in rows) != sorted(required)
-        or any(not nonblank_strings(row.get("evidenceRefs")) for row in rows)
+        or any(not _evidenced_or_unverified(row) for row in rows)
     ):
         reasons.append("mandatory requirement evidence missing")
     target = current.get("completionTarget", {})

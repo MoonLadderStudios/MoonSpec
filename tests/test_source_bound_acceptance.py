@@ -1166,3 +1166,39 @@ def test_malformed_gap_reference_is_never_an_empty_success_or_valid_partial_hand
     assert not acceptance.validate_report(report, current)["valid"]
     result = acceptance.reuse(report, current)
     assert not result["reusable"] and result["reusableRows"] == []
+
+
+def add_unreachable_row(report, current, row_update):
+    plan = {**current["verificationMap"][0], "id": "AC-2", "sourceLocator": "acceptance[1]"}
+    current["scope"]["requirementIds"].append("AC-2")
+    current["verificationMap"].append(plan)
+    binding = report["validatedRefs"]["acceptance"]
+    binding["scope"] = copy.deepcopy(current["scope"])
+    binding["verificationMap"] = copy.deepcopy(current["verificationMap"])
+    binding["evidence"].append({
+        "requirementId": "AC-2",
+        "obligationDigest": acceptance.obligation_digest(plan),
+        "evidenceRefs": [],
+        **row_update,
+    })
+
+
+def test_success_keeps_criterion_outside_verifier_reach_as_unverified(bound):
+    report, current = bound
+    add_unreachable_row(report, current, {
+        "status": "UNVERIFIED",
+        "unverified": {"reason": "Needs a GPU host.", "verifiableBy": "GPU CI lane"},
+    })
+    assert acceptance.validate_report(report, current)["valid"]
+    assert acceptance.reuse(report, current)["reusable"]
+
+
+@pytest.mark.parametrize("row_update", [
+    {"status": "UNVERIFIED"},
+    {"status": "MISSING", "unverified": {"reason": "No GPU.", "verifiableBy": "GPU CI"}},
+    {"status": "UNVERIFIED", "unverified": {"reason": "No GPU."}},
+])
+def test_unverified_success_row_needs_its_reason_and_owner(bound, row_update):
+    report, current = bound
+    add_unreachable_row(report, current, row_update)
+    assert not acceptance.validate_report(report, current)["valid"]

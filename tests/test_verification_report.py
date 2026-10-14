@@ -188,6 +188,40 @@ def test_late_evidence_cannot_change_selected_scope_or_candidate(completed, chan
     assert not acceptance.validate_report(report, current)["valid"]
 
 
+def unreachable_criterion(report, current, unverified):
+    current["scope"]["requirementIds"].append("AC-2")
+    binding = report["validatedRefs"]["acceptance"]
+    binding["scope"]["requirementIds"].append("AC-2")
+    binding["evidence"].append({"requirementId": "AC-2", "unverified": unverified})
+
+
+def test_success_records_criterion_outside_verifier_reach_as_unverified(completed):
+    report, current = completed
+    unreachable_criterion(report, current, {
+        "reason": "Requires a GPU render host this verifier does not have.",
+        "verifiableBy": "the repository's GPU CI lane",
+    })
+    assert acceptance.validate_report(report, current)["valid"]
+    assert acceptance.reuse(report, current)["reusable"]
+
+
+@pytest.mark.parametrize("unverified", [
+    {}, {"reason": " ", "verifiableBy": "ci"}, {"reason": "No GPU."},
+    {"reason": "No GPU.", "verifiableBy": ""}, "No GPU.",
+])
+def test_unverified_criterion_needs_a_reason_and_who_can_verify_it(completed, unverified):
+    report, current = completed
+    unreachable_criterion(report, current, unverified)
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
+def test_criterion_cannot_be_both_evidenced_and_unverified(completed):
+    report, current = completed
+    row = report["validatedRefs"]["acceptance"]["evidence"][0]
+    row["unverified"] = {"reason": "No GPU.", "verifiableBy": "GPU CI"}
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
 @pytest.mark.parametrize("change", ["revision", "contentDigest", "ref-only"])
 def test_success_binding_requires_recorded_completion_target_identity(completed, change):
     report, current = completed
