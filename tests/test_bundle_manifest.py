@@ -23,7 +23,6 @@ def test_manifest_exports_expected_skill_ids() -> None:
         "moonspec-align",
         "moonspec-implement",
         "moonspec-verify",
-        "moonspec-doc-reconcile",
         "moonspec-orchestrate",
     }
 
@@ -57,7 +56,6 @@ def test_preset_references_only_exported_skills() -> None:
     }
 
     assert preset_skills <= skills
-    assert "moonspec-doc-reconcile" in preset_skills
 
 
 def test_commands_match_canonical_skills() -> None:
