@@ -87,7 +87,7 @@ Allowed row statuses:
 
 ## Bounded Backlog
 
-Produce `boundedBacklog` for every missing, partial, conflict, or required-unverified row. The backlog prioritizes remaining implementation for downstream planning, tasks, and implementation. Verification retains the complete original scope, including previously met requirements as regression constraints.
+Produce `boundedBacklog` for missing, partial, or conflicting implementation rows. Unverified criteria are disclosure-only: keep their reason and verifiableBy in the assessment, outside `boundedBacklog`. The backlog prioritizes remaining implementation for downstream planning, tasks, and implementation. Verification retains the complete original scope, including previously met requirements as regression constraints.
 
 Separate executable repository changes from required evidence or decisions owned
 outside the current runtime. Name the owner, missing evidence, and resume check

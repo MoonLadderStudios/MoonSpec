@@ -134,7 +134,9 @@ Bind objective evidence in the existing `validatedRefs.acceptance` field using
   `evidenceRefs` or an `unverified` object with nonblank `reason` and
   `verifiableBy`, never both nonempty evidence and Unverified. `evidenceRefs` may
   be omitted or empty for Unverified rows; `unverified: null` is absent on
-  evidenced rows. All records describe the enclosing subject and scope.
+  evidenced rows. All records describe the enclosing subject and scope. A mixed non-pass accounts
+  for passed rows, valid Unverified rows, and source-linked remaining work.
+  Unverified rows must not appear in `remainingWork`.
 - `freshness`: the required policy identity and optional expiry for time-sensitive
   evidence. Content-bound evidence need not expire arbitrarily.
 
@@ -208,7 +210,8 @@ or turn syntactically valid output into product approval.
 If preflight fails, preserve the original response and diagnostics and make one
 bounded report-only repair from the existing findings, then revalidate. Do not
 change source, tests, scope, evidence, or a truthful verdict to satisfy formatting.
-Missing substantive evidence returns to its existing owner instead. Unresolved
+Missing obtainable evidence returns to its existing owner; evidence outside the
+verifier's reach is disclosed as Unverified instead. Unresolved
 output errors remain a report-production failure, not a fabricated product
 failure, unavailable environment, or human-review requirement. The caller retains
 the last trustworthy verdict and owns any further authorized continuation.

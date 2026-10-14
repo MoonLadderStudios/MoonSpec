@@ -221,8 +221,8 @@ Build the claim inventory from the canonical source document's stable claim head
 
 For each in-scope canonical claim, classify the result with separate fields for:
 
-- Implementation status: `VERIFIED`, `PARTIAL`, `MISSING`, `CONFLICT`, or `NO_DETERMINATION`.
-- Verification status: `VERIFIED`, `PARTIAL`, `MISSING`, `CONFLICT`, or `NO_DETERMINATION`.
+- Implementation status: `VERIFIED`, `PARTIAL`, `MISSING`, `CONFLICT`, `UNVERIFIED`, or `NO_DETERMINATION`.
+- Verification status: `VERIFIED`, `PARTIAL`, `MISSING`, `CONFLICT`, `UNVERIFIED`, or `NO_DETERMINATION`.
 - Drift status: `NONE`, `POSSIBLE_DOC_DRIFT`, or `DEFINITE_DOC_DRIFT`.
 
 Each claim row must include at least one durable reference in one of these fields:
@@ -408,7 +408,8 @@ Use these statuses:
 - `PARTIAL`: some implementation exists, but behavior, wiring, or test coverage is incomplete.
 - `MISSING`: no meaningful implementation evidence exists.
 - `CONFLICT`: implementation contradicts the spec, original request, source design, or relevant repo guidance.
-- `NO_DETERMINATION`: evidence is too ambiguous or unavailable to make a defensible call.
+- `UNVERIFIED`: the criterion remains outside the verifier's reach after reasonable setup; record its reason and `verifiableBy`, disclose it, and do not add it to remaining work.
+- `NO_DETERMINATION`: evidence is ambiguous or still obtainable and needed to make a defensible call.
 
 Rules:
 
@@ -424,9 +425,9 @@ Rules:
 
 Choose exactly one verdict:
 
-- `FULLY_IMPLEMENTED`: implementation, unit tests, repo-local hermetic checks, source design requirements, relevant AGENTS.md principles, and original request alignment all verify.
+- `FULLY_IMPLEMENTED`: all in-scope criteria are verified or validly Unverified, with no observed defect remaining.
 - `ADDITIONAL_WORK_NEEDED`: concrete implementation or validation gaps remain.
-- `NO_DETERMINATION`: required evidence cannot be inspected or commands cannot be run enough to reach a defensible conclusion.
+- `NO_DETERMINATION`: ambiguous or still-obtainable required evidence needs another bounded verification attempt; criteria outside the verifier's reach are Unverified instead.
 - `BLOCKED`: the execution environment prevents trustworthy verification, such as `ENVIRONMENT_CONTAMINATED_BY_SKILL_PROJECTION` from the workspace projection preflight. Include the diagnostic, whether it is recoverable in the current runtime, and the minimum repair needed.
 
 Prefer `ADDITIONAL_WORK_NEEDED` over `NO_DETERMINATION` when a concrete missing code or test gap is visible. Use `BLOCKED` only for environment failures; it says nothing about implementation completeness.
@@ -536,7 +537,7 @@ Use this structure:
 
 | Requirement | Evidence | Status | Notes |
 |-------------|----------|--------|-------|
-| FR-001 | [file/test/reference] | VERIFIED/PARTIAL/MISSING/CONFLICT/NO_DETERMINATION | [notes] |
+| FR-001 | [file/test/reference] | VERIFIED/PARTIAL/MISSING/CONFLICT/UNVERIFIED/NO_DETERMINATION | [notes] |
 
 ## Acceptance Scenario Coverage
 
@@ -547,13 +548,13 @@ Use this structure:
 
 | Item | Evidence | Status | Notes |
 |------|----------|--------|-------|
-| DOC-REQ-001 / AGENTS.md principle | [file/test/reference] | VERIFIED/PARTIAL/MISSING/CONFLICT/NO_DETERMINATION | [notes] |
+| DOC-REQ-001 / AGENTS.md principle | [file/test/reference] | VERIFIED/PARTIAL/MISSING/CONFLICT/UNVERIFIED/NO_DETERMINATION | [notes] |
 
 ## Canonical Claim Coverage
 
 | Claim | Code Evidence | Test Evidence | Artifact Evidence | Implementation Status | Verification Status | Drift Status | Gap Reason |
 |-------|---------------|---------------|-------------------|-----------------------|---------------------|--------------|------------|
-| DOC-REQ-001 | [file:line or symbol] | [test path/name or command] | [artifact/ref] | VERIFIED/PARTIAL/MISSING/CONFLICT/NO_DETERMINATION | VERIFIED/PARTIAL/MISSING/CONFLICT/NO_DETERMINATION | NONE/POSSIBLE_DOC_DRIFT/DEFINITE_DOC_DRIFT | [clear reason or empty when fully evidenced] |
+| DOC-REQ-001 | [file:line or symbol] | [test path/name or command] | [artifact/ref] | VERIFIED/PARTIAL/MISSING/CONFLICT/UNVERIFIED/NO_DETERMINATION | VERIFIED/PARTIAL/MISSING/CONFLICT/UNVERIFIED/NO_DETERMINATION | NONE/POSSIBLE_DOC_DRIFT/DEFINITE_DOC_DRIFT | [clear reason or empty when fully evidenced] |
 
 ## Original Request Alignment
 
