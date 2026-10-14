@@ -36,3 +36,18 @@ def test_browser_exception_honors_applicable_agent_guidance_without_promoting_do
         text = " ".join((BUNDLE / "skills/moonspec-verify" / path).read_text().split())
         assert "applicable root or scoped `AGENTS.md` instructions" in text
         assert "Merely naming a browser suite" in text
+
+
+def test_unverified_producer_contract_is_nonblocking_and_disclosed():
+    assess = (BUNDLE / "skills/moonspec-assess/SKILL.md").read_text()
+    verify = (BUNDLE / "skills/moonspec-verify/SKILL.md").read_text()
+    policy = (BUNDLE / "skills/moonspec-verify/references/acceptance-policy.md").read_text()
+    assert "required-unverified row" not in assess
+    assert "Unverified criteria are disclosure-only" in assess
+    statuses = verify.split("Use these statuses:", 1)[1].split("Rules:", 1)[0]
+    assert "`UNVERIFIED`" in statuses and "reason" in statuses and "verifiableBy" in statuses
+    assert "VERIFIED/PARTIAL/MISSING/CONFLICT/UNVERIFIED/NO_DETERMINATION" in verify
+    assert "VERIFIED/PARTIAL/MISSING/CONFLICT/NO_DETERMINATION" not in verify
+    assert "Unverified rows must not appear in `remainingWork`" in policy
+    assert "Passed rows plus gap IDs" not in policy
+    assert "valid Unverified rows, and source-linked remaining work" in " ".join(policy.split())

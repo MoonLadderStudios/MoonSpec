@@ -198,7 +198,8 @@ Bind objective evidence in the existing `validatedRefs.acceptance` field using
   `UNVERIFIED` on a source-bound row), never both nonempty evidence and Unverified. `evidenceRefs` may be omitted or
   empty for Unverified rows; `unverified: null` is absent on evidenced rows. A
   success accounts for every required row exactly once; a non-pass may preserve
-  passed rows while source-linked remaining work accounts for unresolved rows.
+  passed rows, valid Unverified rows, and source-linked remaining work to
+  account for the complete scope. Unverified rows must not appear in `remainingWork`.
 - `freshness`: the required policy identity and optional expiry for time-sensitive
   evidence. Content-bound evidence need not expire arbitrarily.
 
@@ -346,8 +347,9 @@ including after a prior 403 or expiry, before repeating it. Actual assertion
 failures, explicit proof requirements and permission holds remain controlling.
 
 A current non-pass includes inline, mandatory-source-linked `remainingWork` even
-when a durable `remainingWorkRef` also exists. Passed rows plus gap IDs cover the
-complete mandatory scope without contradiction; optional/unknown criteria cannot
+when a durable `remainingWorkRef` also exists. Passed rows, valid Unverified rows, and source-linked remaining work cover the
+complete mandatory scope without contradiction; Unverified rows are not gaps and
+must not appear in `remainingWork`; optional/unknown criteria cannot
 block it. Retain the original historical assessment unchanged. Historical no-map
 reports and a truthful non-pass without identity capture remain readable for
 compatibility; they do not acquire current source-bound or completion authority.
@@ -359,7 +361,8 @@ or turn syntactically valid output into product approval.
 If preflight fails, preserve the original response and diagnostics and make one
 bounded report-only repair from the existing findings, then revalidate. Do not
 change source, tests, scope, evidence, or a truthful verdict to satisfy formatting.
-Missing substantive evidence returns to its existing owner instead. Unresolved
+Missing obtainable evidence returns to its existing owner; evidence outside the
+verifier's reach is disclosed as Unverified instead. Unresolved
 output errors remain a report-production failure, not a fabricated product
 failure, unavailable environment, or human-review requirement. The caller retains
 the last trustworthy verdict and owns any further authorized continuation.
