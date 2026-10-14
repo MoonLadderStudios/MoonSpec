@@ -23,7 +23,7 @@ This skill edits MoonSpec execution artifacts, not application feature code. Typ
 - files under `contracts/`
 - feature checklists when present
 
-Alignment operates only among temporary execution artifacts. It must never edit canonical `docs/` files and never aligns a canonical document toward a spec; the canonical document is the higher authority (see `docs/Workflows/MoonSpecDocumentModel.md`). Canonical document updates belong to the implementation change, not to alignment edits.
+Alignment edits only temporary execution artifacts, never canonical `docs/` files. Preserve explicit task-authorized behavior changes even when existing documentation describes the old behavior; their required in-place documentation corrections belong to implementation, not alignment edits. Otherwise use the adopted source requirements to guide the derived artifacts.
 
 Do not ask the user for clarification. Resolve uncertainty by reading project context, making conservative decisions, documenting assumptions, and applying the least surprising artifact changes.
 
@@ -87,12 +87,13 @@ Build an internal model before editing:
 - User-story inventory with acceptance scenarios and edge cases.
 - Task coverage mapping from task IDs to requirements, scenarios, success criteria, and design artifacts.
 - Artifact authority order:
-  1. Explicit source design requirements and relevant `AGENTS.md` principles.
-  2. Original feature input preserved in `spec.md`.
-  3. `spec.md` user-visible behavior and acceptance criteria.
-  4. `plan.md` architecture and technical decisions.
-  5. Design artifacts such as contracts, data model, research, and quickstart.
-  6. `tasks.md` execution breakdown.
+  1. The current task and applicable `AGENTS.md` requirements.
+  2. Original feature input preserved in `spec.md`, including explicitly authorized behavior changes.
+  3. Source design requirements adopted by the task.
+  4. `spec.md` user-visible behavior and acceptance criteria.
+  5. `plan.md` architecture and technical decisions.
+  6. Design artifacts such as contracts, data model, research, and quickstart.
+  7. `tasks.md` execution breakdown.
 - Project context: language, frameworks, test tools, existing file structure, and conventions.
 
 ## Detection Passes
