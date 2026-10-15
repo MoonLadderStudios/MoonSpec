@@ -129,7 +129,7 @@ Status handling:
 - `implemented_unverified`: generate verification tests first, red-first confirmation tasks when the expected behavior is not already covered, and explicit fallback implementation tasks to run if verification fails.
 - `implemented_verified`: do not generate new implementation tasks by default, but preserve traceability and include final validation so the existing evidence remains checked.
 
-Each executable inventory row needs task coverage appropriate to its status and either unit or integration test coverage unless it is `implemented_verified` with strong existing evidence. Acceptance scenarios, external boundaries, workflows, persistence, contracts, CLI/API/UI behavior, and service interactions require integration test coverage unless the spec clearly makes integration irrelevant or the row is already `implemented_verified` by existing integration evidence.
+Each executable inventory row needs task coverage appropriate to its status and either unit or integration test coverage unless it is `implemented_verified` with strong existing evidence. For executable rows, acceptance scenarios, external boundaries, workflows, persistence, contracts, CLI/API/UI behavior, and service interactions require integration test coverage unless the spec clearly makes integration irrelevant or the row is already `implemented_verified` by existing integration evidence.
 
 ## Generate tasks.md
 
@@ -308,7 +308,7 @@ Before reporting, verify:
 - Unit test tasks precede implementation tasks.
 - Integration test tasks precede implementation tasks.
 - Red-first confirmation tasks exist before production code tasks.
-- Every traceability inventory row has task coverage.
+- Every executable traceability inventory row has task coverage; disclosure-only `unverified` rows retain their source IDs, reason and verifiableBy without tasks.
 - Every task maps to stable claim IDs or explicitly explains why none apply.
 - `## Requirement Status` rows from `plan.md`, when present, preserve `unverified` disclosures without executable tasks and avoid unnecessary implementation tasks for `implemented_verified` rows.
 - `implemented_unverified` rows include fallback implementation tasks that are conditional on verification failure.
@@ -327,7 +327,7 @@ Report:
 - Independent test criteria.
 - Source design or original request coverage summary.
 - Source packet provenance summary: source document path, viewpoint, owning surface, stable claim IDs, temporary-adapter role, and source issue traceability.
-- Requirement status coverage summary, including code-and-test, verification-only, conditional fallback, and already-verified counts when `plan.md` provides statuses.
+- Requirement status coverage summary, including code-and-test, verification-only, conditional fallback, already-verified, and disclosure-only Unverified counts when `plan.md` provides statuses.
 - Required unit and integration test coverage.
 - Unit and integration test tooling.
 - Final verification task status.

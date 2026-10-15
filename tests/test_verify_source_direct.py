@@ -95,3 +95,13 @@ def test_assess_plan_tasks_preserve_unverified_status_before_task_coverage():
     assert "`unverified` -> disclosure only" in plan
     assert "`unverified`: disclosure only" in plan
     assert "Coverage rules below apply only to executable rows" in tasks
+
+
+def test_tasks_coverage_and_final_validation_exclude_disclosure_only_rows():
+    text = (BUNDLE / "skills/moonspec-tasks/SKILL.md").read_text()
+    validation = text.split("## Validation\n", 1)[1].split("## Report\n", 1)[0]
+    assert "Every executable traceability inventory row has task coverage" in validation
+    assert "Every traceability inventory row has task coverage" not in validation
+    assert "For executable rows, acceptance scenarios" in text
+    assert "Coverage rules below apply only to executable rows" in text
+    assert "disclosure-only Unverified counts" in text
