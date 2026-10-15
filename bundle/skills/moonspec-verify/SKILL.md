@@ -30,7 +30,7 @@ This skill answers:
 
 ## Source Acceptance Matrix Verification
 
-When `artifacts/moonspec/source-acceptance.json` or `artifacts/moonspec/acceptance-assessment.json` exists and its `featureId`, source, feature directory, issue reference, or requirement IDs match the selected verification baseline, verify every repo-verifiable source row for that baseline. Do not choose `FULLY_IMPLEMENTED` unless every required repo-verifiable source row for the selected baseline is satisfied. In source-direct verification mode, ignore stale or unrelated acceptance artifacts whose source metadata does not match the selected source.
+When `artifacts/moonspec/source-acceptance.json` or `artifacts/moonspec/acceptance-assessment.json` exists and its `featureId`, source, feature directory, issue reference, or requirement IDs match the selected verification baseline, evaluate every source row for that baseline under the shared acceptance policy. `FULLY_IMPLEMENTED` permits verified rows and valid Unverified disclosures, with no observed defect remaining. In source-direct verification mode, ignore stale or unrelated acceptance artifacts whose source metadata does not match the selected source.
 
 ## Inputs
 
@@ -112,8 +112,8 @@ In issue-brief verification mode:
 1. Read the original issue brief artifact and any supplied assessment artifact. An absent optional assessment does not replace or invalidate a usable original baseline.
 2. Use the original issue summary, description, acceptance criteria, and constraints as the verification baseline. The assessment is process context.
 3. Use a `PARTIALLY_IMPLEMENTED` assessment to prioritize gaps; verify the complete selected scope, retaining previously met requirements as regression constraints.
-4. An initial `FULLY_IMPLEMENTED` assessment only says implementation appears present. Reuse objective evidence only under the acceptance policy; otherwise execute the missing verification.
-5. Inspect production code and tests directly; do not treat the assessment itself as proof that new work is complete.
+4. An initial `FULLY_IMPLEMENTED` assessment only says implementation appears present. Reuse evidence, execute feasible missing checks, and disclose unavailable checks under the acceptance policy.
+5. Inspect production code and tests directly; do not treat the assessment itself as proof that new work is complete. Normalize issue-brief `unverifiable` and source-matrix `UNVERIFIED` to verification `UNVERIFIED`, preserving the stable source ID as `requirementId` and nonblank `unverified.reason` and `unverified.verifiableBy`. Reassess availability on the current candidate; neither spelling asserts a pass.
 6. Do not require `spec.md`, `plan.md`, `tasks.md`, or a standalone constitution file.
 
 When verification follows a remediation attempt, rebuild every controlling
@@ -157,8 +157,8 @@ judgment on the same candidate, not another implementation or full export.
 ## Evidence policy
 
 Apply [the acceptance policy](references/acceptance-policy.md) to every source
-requirement and check. Mandatory acceptance remains controlling regardless of
-tool availability; optional enrichment and diagnostics remain advisory. Record
+requirement and check. Mandatory criteria remain in scope; unavailable checks
+use Unverified disclosures, and optional diagnostics remain advisory. Record
 actual command results and exact missing evidence. Isolated implementation tests
 must proceed independently of any separately authorized production operation.
 
@@ -239,12 +239,12 @@ For each in-scope canonical claim, classify the result with separate fields for:
 - Verification status: `VERIFIED`, `PARTIAL`, `MISSING`, `CONFLICT`, `UNVERIFIED`, or `NO_DETERMINATION`.
 - Drift status: `NONE`, `POSSIBLE_DOC_DRIFT`, or `DEFINITE_DOC_DRIFT`.
 
-Each claim row must include at least one durable reference in one of these fields:
+Each claim row must include evidence or a source-linked Unverified disclosure in these fields:
 
 - Code evidence, such as repository file paths with line numbers or named code symbols.
 - Test evidence, such as test file paths, test names, and command results.
 - Artifact evidence, such as artifact refs, diagnostics refs, or report refs.
-- Gap reason, when evidence is missing, ambiguous, contradictory, or out of scope.
+- Gap reason for an observed gap, or Unverified reason and verifiableBy when evidence remains unavailable.
 
 Classify gaps separately:
 
@@ -531,7 +531,9 @@ For current structured judgments of every verdict, include `validatedRefs.accept
 `acceptance/v1` contract in [the acceptance policy](references/acceptance-policy.md).
 Capture subject and scope before checks and confirm content is unchanged afterward.
 Preserve source/base identity separately. Bind each mandatory requirement to actual
-command/artifact evidence. A dirty workspace needs its content digest or durable
+command/artifact evidence or a valid Unverified disclosure: stable `requirementId`,
+`status: UNVERIFIED`, nonblank `unverified.reason` and `unverified.verifiableBy`,
+and no evidence refs. A dirty workspace needs its content digest or durable
 checkpoint; never use HEAD alone. Report candidate success separately from target
 completion. Do not overwrite the initial assessment with this later result.
 

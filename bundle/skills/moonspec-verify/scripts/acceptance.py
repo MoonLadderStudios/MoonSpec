@@ -939,6 +939,8 @@ def _valid_remaining_work(work: object) -> bool:
     for item in work:
         if not isinstance(item, dict):
             return False
+        if "requirementIds" in item and not isinstance(item["requirementIds"], list):
+            return False
         for field in ("requirement", "gapType", "remainingWork"):
             value = item.get(field)
             if not isinstance(value, str) or not value.strip():
@@ -993,7 +995,9 @@ def _unverified_report_errors(report: dict) -> list[str]:
             if not isinstance(item, dict):
                 continue
             ids = item.get("requirementIds", [])
-            ids = ids if isinstance(ids, list) else []
+            if not isinstance(ids, list):
+                errors.append("remainingWork requirementIds must be a list")
+                continue
             if any(isinstance(key, str) and key in unverified_ids
                    for key in [item.get("requirement"), *ids]):
                 errors.append("unverified requirement cannot also remain a blocking gap")

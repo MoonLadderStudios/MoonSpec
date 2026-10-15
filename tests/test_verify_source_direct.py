@@ -105,3 +105,35 @@ def test_tasks_coverage_and_final_validation_exclude_disclosure_only_rows():
     assert "For executable rows, acceptance scenarios" in text
     assert "Coverage rules below apply only to executable rows" in text
     assert "disclosure-only Unverified counts" in text
+
+
+def test_all_unverified_task_contract_has_no_mandatory_test_or_setup_work():
+    tasks = (BUNDLE / "skills/moonspec-tasks/SKILL.md").read_text()
+    assert "When every row is `unverified`, retain disclosures and the final report verification task only" in tasks
+    for obsolete in (
+        "- Unit tests and integration tests are required.",
+        "- Include red-first confirmation tasks.",
+        "Include project initialization and tool configuration:",
+        "- Red-first confirmation tasks exist before production code tasks.",
+        "Create exactly one story phase. Include:",
+    ):
+        assert obsolete not in tasks
+    assert "When production code tasks exist" in tasks
+    assert "Remove unused sample tasks" in tasks
+
+
+def test_assessment_status_and_metadata_contract_reaches_all_consumers():
+    assess = (BUNDLE / "skills/moonspec-assess/SKILL.md").read_text()
+    assert "`unverifiable` rows must include `unverified: {reason, verifiableBy}`" in assess
+    assert "`UNVERIFIED` rows use the same disclosure object" in assess
+    for skill in ("plan", "tasks", "verify"):
+        text = (BUNDLE / f"skills/moonspec-{skill}/SKILL.md").read_text()
+        assert "`unverifiable`" in text and "`UNVERIFIED`" in text
+        assert "unverified.reason" in text and "unverified.verifiableBy" in text
+
+
+def test_verify_binding_allows_disclosure_instead_of_evidence():
+    text = (BUNDLE / "skills/moonspec-verify/SKILL.md").read_text()
+    binding = text.split("## Evidence binding", 1)[1].split("## Report", 1)[0]
+    assert "or a valid Unverified disclosure" in binding
+    assert "no evidence refs" in binding

@@ -18,11 +18,10 @@ The generated task list must:
 
 - Cover exactly one independently testable story from `spec.md`.
 - Follow TDD by default.
-- Include unit tests and integration tests before production implementation.
-- Include red-first confirmation tasks.
+- For executable implementation work, include applicable unit and integration tests with red-first confirmation before production code.
 - Preserve traceability to the original request or source design preserved in `spec.md`.
 - Carry forward docs-native packet provenance from `spec.md`: source document path, document class, viewpoint, owning surface, stable claim IDs, temporary-adapter role, and source issue traceability such as `MM-933` / `MM-927`.
-- Include final `/moonspec.verify` work after implementation and tests pass.
+- Include final `/moonspec.verify` work after any executable work finishes; it validates evidence and disclosures, not unavailable checks.
 
 `tasks.md` is an imperative, temporary execution artifact (see `docs/Workflows/MoonSpecDocumentModel.md`). Never copy its content into canonical `docs/` files.
 
@@ -105,7 +104,7 @@ Read:
 
 ## Source Acceptance Coverage
 
-When `artifacts/moonspec/acceptance-assessment.json` exists and its `featureId` matches the active feature, every missing, partial, or conflict implementation row must map to tests and implementation or verification tasks. Unverified criteria are disclosure-only: preserve their source IDs, reason and verifiableBy outside executable tasks and outside the remediation backlog, even when the criterion is required. Do not turn unavailable checks into tasks or infer missing implementation from an Unverified assessment. Each negative constraint row must be preserved as a test, verification task, or explicit non-repo-verifiable exclusion; an Unverified negative constraint follows the same disclosure-only rule.
+Use the matching assessment and plan to separate executable work from disclosure-only rows before generating tasks. Missing, partial, or conflicting implementation needs tests and remediation. Apply the status rules below to all source rows, including negative constraints.
 
 Build a traceability inventory before writing tasks:
 
@@ -118,7 +117,7 @@ Build a traceability inventory before writing tasks:
 
 For each row, carry forward the matching `## Requirement Status` entry from `plan.md` when present. Allowed statuses are `missing`, `partial`, `unverified`, `implemented_unverified`, and `implemented_verified`; apply assessment disclosure precedence before treating an otherwise unclassified row as `missing`.
 
-Unverified criteria are disclosure-only. Carry an assessment's `UNVERIFIED` row into the plan and task inventory as `unverified`, retaining its source ID, reason and verifiableBy. This status takes precedence over `implemented_unverified` when the check remains outside the verifier's capabilities, access, or time after reasonable attempts. It creates no test, verification, or fallback implementation tasks, even for required criteria. Do not infer missing implementation from unavailable evidence. Observed defects still require remediation; classify those separately as `missing`, `partial`, or conflicting implementation work. Actual permission needed to perform an action remains an authority handoff under the shared acceptance policy, never an Unverified evidence waiver.
+Unverified criteria are disclosure-only. Normalize issue-brief `unverifiable` and source-matrix `UNVERIFIED` to `unverified`, retaining the source ID and nonblank `unverified.reason` and `unverified.verifiableBy` (reason and verifiableBy in the plan table). This status takes precedence over `implemented_unverified` when the check remains outside the verifier's capabilities, access, or time after reasonable attempts. It creates no test, verification, or fallback implementation tasks, even for required criteria. When every row is `unverified`, retain disclosures and the final report verification task only; do not create setup, test-tool installation, red-first, implementation, or polish work. Do not infer missing implementation from unavailable evidence. Observed defects still require remediation; classify those separately as `missing`, `partial`, or conflicting implementation work. Actual permission needed to perform an action remains an authority handoff under the shared acceptance policy, never an Unverified evidence waiver.
 
 Status handling:
 
@@ -133,28 +132,26 @@ Each executable inventory row needs task coverage appropriate to its status and 
 
 ## Generate tasks.md
 
-Create or replace `FEATURE_DIR/tasks.md` using `templates/tasks-template.md`. Preserve the template's structure, but replace all sample tasks with concrete tasks for the current story.
+Create or replace `FEATURE_DIR/tasks.md` using `templates/tasks-template.md`. Preserve the template's headings. Remove unused sample tasks; populate only work required by executable rows and final report verification.
 
 Fill:
 
 - Feature name.
 - Input paths.
 - Prerequisites.
-- Unit test command.
-- Integration test command.
+- Applicable unit/integration test commands, or N/A when no executable checks are planned.
 - Source traceability summary.
 - Source packet summary: source document path, viewpoint, owning surface, stable claim IDs, temporary-adapter role, and source issue traceability when present.
 - Story summary.
 - Independent test.
 - Story traceability IDs.
-- Unit test plan.
-- Integration test plan.
+- Applicable unit/integration test plan, or N/A for disclosure-only work.
 - Task phases.
 - Dependencies and execution order.
 - Parallel examples.
 - Implementation strategy.
 
-When `plan.md` includes `## Requirement Status`, reflect those statuses in the source traceability summary and implementation strategy. The task list must distinguish code-and-test work, verification-only work, contingency implementation work, and already-verified rows.
+When `plan.md` includes `## Requirement Status`, reflect those statuses in the source traceability summary and implementation strategy. The task list must distinguish code-and-test work, verification-only work, contingency implementation work, already-verified rows, and disclosure-only rows.
 
 The output must be immediately executable by an LLM without extra context.
 
@@ -196,11 +193,11 @@ T001 Create model
 
 ## Task Organization
 
-Generate these phases.
+Use these phase headings, leaving phases with no executable work empty or marked N/A.
 
 ### Phase 1: Setup
 
-Include project initialization and tool configuration:
+Include project initialization or tool configuration only when executable work needs it:
 
 - Shared project structure.
 - Dependency or package configuration.
@@ -221,20 +218,17 @@ No story implementation work can begin until this phase is complete.
 
 ### Phase 3: Story
 
-Create exactly one story phase. Include:
+Create exactly one story phase. Include its summary and disclosures; include the following work items only when required by executable rows:
 
 - Story summary.
 - Independent test.
 - Traceability IDs.
-- Unit test plan.
-- Integration test plan.
-- Unit test tasks.
-- Integration test tasks.
-- Red-first confirmation tasks.
-- Implementation tasks.
-- Story validation task.
+- Applicable unit/integration test plan, or N/A for disclosure-only work.
+- Applicable test tasks and red-first confirmations.
+- Needed implementation tasks.
+- Feasible story validation tasks.
 
-Order story work as:
+Order applicable executable story work as follows; omit inapplicable steps:
 
 1. Unit tests.
 2. Integration tests.
@@ -259,7 +253,7 @@ Include only work that strengthens the completed story without adding hidden sco
 - Additional edge-case coverage.
 - Additional operational integration coverage.
 - Quickstart validation.
-- A final task to run `/moonspec.verify` after implementation and tests pass.
+- A final task to run `/moonspec.verify` after any executable work finishes, preserving Unverified disclosures even when no tests can run.
 
 ## Coverage Rules
 
@@ -305,9 +299,7 @@ Before reporting, verify:
 - Task IDs are sequential.
 - Exactly one story phase exists.
 - No P1/P2/P3 or multi-story phases exist.
-- Unit test tasks precede implementation tasks.
-- Integration test tasks precede implementation tasks.
-- Red-first confirmation tasks exist before production code tasks.
+- When production code tasks exist, applicable test tasks and red-first confirmations precede them.
 - Every executable traceability inventory row has task coverage; disclosure-only `unverified` rows retain their source IDs, reason and verifiableBy without tasks.
 - Every task maps to stable claim IDs or explicitly explains why none apply.
 - `## Requirement Status` rows from `plan.md`, when present, preserve `unverified` disclosures without executable tasks and avoid unnecessary implementation tasks for `implemented_verified` rows.
@@ -328,8 +320,7 @@ Report:
 - Source design or original request coverage summary.
 - Source packet provenance summary: source document path, viewpoint, owning surface, stable claim IDs, temporary-adapter role, and source issue traceability.
 - Requirement status coverage summary, including code-and-test, verification-only, conditional fallback, already-verified, and disclosure-only Unverified counts when `plan.md` provides statuses.
-- Required unit and integration test coverage.
-- Unit and integration test tooling.
+- Unit/integration test coverage and tooling for executable rows, or N/A when none.
 - Final verification task status.
 - Confirmation that the task list covers exactly one story.
 - Format validation result.
@@ -367,11 +358,10 @@ If no hooks are registered or `.specify/extensions.yml` does not exist, skip sil
 
 - Generate tasks for one story only.
 - Keep TDD as the default strategy.
-- Unit tests and integration tests are required.
-- Red-first confirmation tasks are required before production code.
+- Apply unit/integration testing and red-first requirements only to executable work under the status rules above.
 - Preserve traceability to `spec.md` `**Input**` and source design mappings.
 - Preserve docs-native packet provenance from `spec.md` without treating generated artifacts as authoritative.
-- Consume `plan.md` `## Requirement Status` when present so tasks match planned code, verification-only, conditional fallback, or already-verified work.
+- Consume `plan.md` `## Requirement Status` when present so tasks match planned code, verification-only, conditional fallback, already-verified work, or disclosures.
 - Use concrete file paths and requirement/scenario/stable claim IDs, or explain why no source claim applies.
 - Include final `/moonspec.verify`.
 - Do not implement code from this skill.

@@ -14,8 +14,8 @@ outside MoonMind use `.agents/skills/moonspec-verify/references/acceptance-polic
 It owns scope, mandatory versus optional evidence, reuse, and completion rules.
 Preserve the original scope and previously met requirements as regression constraints;
 prior reports are context, not current proof. Candidate success alone cannot close
-or transition an issue as already landed. Completion requires objective evidence
-on the intended completion target under that policy.
+or transition an issue as already landed. Completion follows the shared policy,
+including valid Unverified disclosures, on the intended completion target.
 
 
 # MoonSpec Assess
@@ -41,10 +41,12 @@ Write the initial assessment to `assessment_artifact_path` and the step result:
 `issue_provider`, `issue_ref`, `issue_url`, `verdict`, `branch`, `base_ref`, `mode`,
 `summary`, and `requirements` (stable `id`, original `description`, `status` of
 `met`, `partially_met`, `not_met`, or `unverifiable`, and evidence/reason).
+`unverifiable` rows must include `unverified: {reason, verifiableBy}` with nonblank
+strings and a stable nonblank `id`; this is the issue-brief spelling of `UNVERIFIED`.
 Record candidate `subject`, original `scope`, and `completionTarget` identities
 from the shared policy. Keep comparison base and publication branch separate.
-For an unavailable mandatory check, name its owner, missing evidence, and resume
-check; complete independent safe inspection first.
+For an unavailable mandatory check, preserve its disclosure; complete independent
+safe inspection first.
 
 Use `FULLY_IMPLEMENTED` for apparently present implementation, `PARTIALLY_IMPLEMENTED`
 for some implementation with gaps, `NOT_IMPLEMENTED` for missing implementation,
@@ -52,7 +54,7 @@ or `BLOCKED` when unavailable mandatory source prevents trustworthy assessment.
 Prerequisites outside the verifier's reach never make an assessment `BLOCKED`.
 Preserve mixed executable work as a bounded backlog. These are
 initial inspection verdicts, not objective acceptance or landing evidence. The
-verifier must check/reuse objective evidence before publication or completion.
+verifier must evaluate evidence or valid Unverified disclosures before publication or completion.
 Do not overwrite this artifact with a later verifier verdict.
 
 ## Verification map and feasibility
@@ -102,6 +104,9 @@ Allowed row statuses:
 - `CONFLICT`
 - `UNVERIFIED`
 - `OUT_OF_SCOPE`
+
+`UNVERIFIED` rows use the same disclosure object and stable source ID as issue-brief
+`unverifiable` rows. Neither status asserts a pass.
 
 ## Bounded Backlog
 

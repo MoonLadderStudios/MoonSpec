@@ -416,3 +416,15 @@ def test_nonpass_unverified_disclosure_requires_source_id(completed, requirement
     result = acceptance.validate_report(report, current if with_current else None)
     assert not result["valid"]
     assert "unverified requirement needs a nonblank requirementId" in result["errors"]
+
+
+@pytest.mark.parametrize("ids", ["AC-2", None, 42, {}, False])
+@pytest.mark.parametrize("with_binding", [False, True])
+def test_legacy_nonpass_rejects_nonlist_requirement_ids(completed, ids, with_binding):
+    report, current = completed
+    report.update(pending())
+    unreachable_criterion(report, current, {"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    report["remainingWork"][0]["requirementIds"] = ids
+    if not with_binding:
+        del report["validatedRefs"]
+    assert not acceptance.validate_report(report)["valid"]

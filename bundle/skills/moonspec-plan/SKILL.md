@@ -159,7 +159,7 @@ Allowed `Status` values:
 - `implemented_unverified`: behavior appears present and verification is feasible, but required proof is missing or insufficient
 - `implemented_verified`: behavior is already present and sufficiently covered by existing tests or other evidence
 
-Unverified criteria are disclosure-only. Carry an assessment's `UNVERIFIED` row into the plan and task inventory as `unverified`, retaining its source ID, reason and verifiableBy. This status takes precedence over `implemented_unverified` when the check remains outside the verifier's capabilities, access, or time after reasonable attempts. It creates no test, verification, or fallback implementation tasks, even for required criteria. Do not infer missing implementation from unavailable evidence. Observed defects still require remediation; classify those separately as `missing`, `partial`, or conflicting implementation work. Actual permission needed to perform an action remains an authority handoff under the shared acceptance policy, never an Unverified evidence waiver.
+Unverified criteria are disclosure-only. Normalize issue-brief `unverifiable` and source-matrix `UNVERIFIED` to `unverified`, retaining the source ID and nonblank `unverified.reason` and `unverified.verifiableBy` (reason and verifiableBy in the plan table). This status takes precedence over `implemented_unverified` when the check remains outside the verifier's capabilities, access, or time after reasonable attempts. It creates no test, verification, or fallback implementation tasks, even for required criteria. Do not infer missing implementation from unavailable evidence. Observed defects still require remediation; classify those separately as `missing`, `partial`, or conflicting implementation work. Actual permission needed to perform an action remains an authority handoff under the shared acceptance policy, never an Unverified evidence waiver.
 
 Rules:
 
@@ -236,9 +236,7 @@ Contract guidance:
 
 Quickstart guidance:
 
-- Include the intended unit test command.
-- Include the intended integration test command.
-- Include any service, fixture, environment, or migration setup needed for integration tests.
+- Include unit/integration commands and required setup only for executable checks; use N/A for disclosure-only rows.
 - Describe how to verify the single story end to end.
 - Reflect requirement status decisions:
   - `unverified`: disclosure only; no runnable check or implementation contingency
@@ -282,7 +280,7 @@ Report:
 - Requirement status summary by ID and count
 - Which items need code changes
 - Which items need tests only
-- Which items are already verified
+- Which items are already verified or disclosure-only
 - Readiness for `/moonspec.tasks`
 
 ## Post-Plan Hooks
