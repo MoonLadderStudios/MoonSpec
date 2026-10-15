@@ -202,3 +202,13 @@ def test_admission_policy_distinguishes_missing_authority_from_unavailable_acces
     assert "`needs_human`" in policy
     assert "unavailable credentials or test environments" in policy
     assert "unavailable/unauthorized rows the verifier cannot reach are Unverified" not in policy
+
+
+def test_orchestrate_workflow_assesses_matching_source_before_planning():
+    text = (BUNDLE / "skills/moonspec-orchestrate/SKILL.md").read_text()
+    workflow = text.split("## Workflow", 1)[1]
+    assess = workflow.index("Run `moonspec-assess`")
+    plan = workflow.index("Run `moonspec-plan`")
+    assert assess < plan
+    assert "featureId" in workflow[:plan]
+    assert "skip assessment" in workflow[:plan]

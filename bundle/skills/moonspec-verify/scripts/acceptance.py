@@ -375,13 +375,8 @@ def _normalized_remaining_work(
     errors = []
     gaps = set()
     for item in work:
-        ids = item.get("requirementIds", [item["requirement"]])
-        if (
-            not nonblank_strings(ids)
-            or len(set(ids)) != len(ids)
-            or item["requirement"] not in ids
-            or not set(ids) <= set(required)
-        ):
+        ids = _remaining_work_ids(item)
+        if ids is None or not ids <= set(required):
             errors.append(
                 "remaining work must consistently name mandatory requirements in the report source scope"
             )
@@ -932,6 +927,17 @@ def _candidate_rows(report: dict, current: dict) -> list[dict]:
     return result
 
 
+def _remaining_work_ids(item: object) -> set[str] | None:
+    """Normalize handoff IDs identically for legacy and source-bound reports."""
+    if not isinstance(item, dict) or not _text(item.get("requirement")):
+        return None
+    ids = item.get("requirementIds", [item["requirement"]])
+    if (not nonblank_strings(ids) or len(set(ids)) != len(ids)
+            or item["requirement"] not in ids):
+        return None
+    return set(ids)
+
+
 def _valid_remaining_work(work: object) -> bool:
     """Require actionable handoff fields, not just a nonempty mapping."""
     if not isinstance(work, list) or not work:
@@ -939,7 +945,7 @@ def _valid_remaining_work(work: object) -> bool:
     for item in work:
         if not isinstance(item, dict):
             return False
-        if "requirementIds" in item and not isinstance(item["requirementIds"], list):
+        if _remaining_work_ids(item) is None:
             return False
         for field in ("requirement", "gapType", "remainingWork"):
             value = item.get(field)
@@ -987,6 +993,7 @@ def _evidence_report_errors(report: dict) -> list[str]:
         return ["acceptance evidence must be a list"]
     errors = []
     unverified_ids = set()
+    seen_ids = set()
     for row in rows:
         if not isinstance(row, dict):
             errors.append("acceptance evidence row must be an object")
@@ -995,6 +1002,10 @@ def _evidence_report_errors(report: dict) -> list[str]:
         if not _text(row.get("requirementId")):
             errors.append("unverified requirement needs a nonblank requirementId" if declared
                           else "acceptance evidence row needs a nonblank requirementId")
+        if _text(row.get("requirementId")):
+            if row["requirementId"] in seen_ids:
+                errors.append("duplicate requirement evidence rows")
+            seen_ids.add(row["requirementId"])
         if "status" in row and (not isinstance(row["status"], str)
                                 or row["status"] not in ROW_STATUSES):
             errors.append("acceptance evidence row has an invalid status")
@@ -1014,12 +1025,8 @@ def _evidence_report_errors(report: dict) -> list[str]:
         for item in work:
             if not isinstance(item, dict):
                 continue
-            ids = item.get("requirementIds", [])
-            if not isinstance(ids, list):
-                errors.append("remainingWork requirementIds must be a list")
-                continue
-            if any(isinstance(key, str) and key in unverified_ids
-                   for key in [item.get("requirement"), *ids]):
+            ids = _remaining_work_ids(item)
+            if ids is not None and ids & unverified_ids:
                 errors.append("unverified requirement cannot also remain a blocking gap")
     return errors
 
@@ -1067,6 +1074,8 @@ def validate_report(report: object, current: dict | None = None) -> dict:
     elif isinstance(verdict, str) and verdict in actions:
         work = report.get("remainingWork")
         reference = report.get("remainingWorkRef")
+        if work is not None and work != [] and not _valid_remaining_work(work):
+            errors.append("present remainingWork must be a complete actionable handoff")
         if not _valid_remaining_work(work) and not (
             isinstance(reference, str) and reference.strip()
         ):

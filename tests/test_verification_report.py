@@ -486,3 +486,27 @@ def test_legacy_nonpass_keeps_omitted_optional_binding_fields_compatible(refs):
     if refs is not None:
         report["validatedRefs"] = refs
     assert acceptance.validate_report(report)["valid"]
+
+
+@pytest.mark.parametrize("ids", [[], [""], [" "], [42], [{}], [None], ["AC-2"], ["AC-1", "AC-1"], ["AC-1", ""]])
+@pytest.mark.parametrize("with_reference", [False, True])
+def test_legacy_gap_ids_use_complete_shared_normalization(ids, with_reference):
+    report = pending()
+    report["remainingWork"][0]["requirementIds"] = ids
+    if with_reference:
+        report["remainingWorkRef"] = "artifact:remaining-work"
+    assert not acceptance.validate_report(report)["valid"]
+
+
+@pytest.mark.parametrize("second", [
+    {"requirementId": "AC-1", "evidenceRefs": ["ci:run-1/output"]},
+    {"requirementId": "AC-1", "status": "FAILED", "evidenceRefs": []},
+    {"requirementId": "AC-1", "status": "UNVERIFIED", "unverified": {"reason": "No GPU", "verifiableBy": "GPU CI"}},
+])
+def test_legacy_nonpass_rejects_duplicate_or_conflicting_evidence_ids(completed, second):
+    report, _ = completed
+    report.update(pending())
+    report["validatedRefs"]["acceptance"]["evidence"].append(second)
+    result = acceptance.validate_report(report)
+    assert not result["valid"]
+    assert "duplicate requirement evidence rows" in result["errors"]

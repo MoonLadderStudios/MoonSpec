@@ -116,7 +116,14 @@ Use the provided input as a preselected single-story request or active feature d
 4. Verify the specify gate.
 5. Do not run `moonspec-breakdown` or create more than one spec from this workflow.
 
-### 2. Plan
+### 2. Assess Matching Source Acceptance
+
+Run `moonspec-assess` before planning when `artifacts/moonspec/source-acceptance.json`
+exists and its `featureId` matches the active feature. Preserve the assessment's
+bounded backlog, Unverified disclosures, and actual authority handoffs for planning.
+If no matching source matrix exists, skip assessment without blocking planning.
+
+### 3. Plan
 
 For the selected spec:
 
@@ -124,12 +131,12 @@ For the selected spec:
 2. Verify generated artifacts.
 3. Stop if planning requires unresolved user input.
 
-### 3. Generate Tasks
+### 4. Generate Tasks
 
 1. Run `moonspec-tasks` if the tasks gate is incomplete or upstream artifacts changed.
 2. Verify task format and source traceability, applying TDD and unit/integration coverage only to executable rows; preserve disclosures, authority handoffs, and final `/moonspec.verify`.
 
-### 4. Align Artifacts
+### 5. Align Artifacts
 
 1. Run `moonspec-align` after task generation.
 2. Let `moonspec-align` make conservative artifact edits without asking for follow-up responses.
@@ -138,14 +145,14 @@ For the selected spec:
 
 This replaces the old manual analyze remediation flow. Do not provide scripted "yes", "continue", or other user responses to get through analyze limitations.
 
-### 5. Implement
+### 6. Implement
 
 1. Run `moonspec-implement` for authorized executable work; skip implementation when no executable work remains. Preserve actual authority handoffs without attempting their actions.
 2. Require applicable tests and red-first confirmation before new production code, never for disclosure-only rows.
 3. Require completed work to be marked `[X]` in `tasks.md`.
 4. Preserve story scope; do not add hidden scope to make verification easier.
 
-### 6. Verify
+### 7. Verify
 
 1. Run `moonspec-verify` as the final gate unless an up-to-date verification report already covers the current code and artifacts.
 2. If verdict is `FULLY_IMPLEMENTED`, report success.

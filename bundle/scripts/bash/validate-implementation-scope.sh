@@ -12,6 +12,7 @@ Usage: $0 --check <tasks|diff> --mode <runtime|docs> [--base-ref <ref>]
 
 Reports legacy file-count diagnostics for MoonSpec workflows.
 Canonical status-based acceptance, not file counts, determines completion.
+Missing files/base refs and invalid arguments are errors; low file counts are advisory.
 USAGE
 }
 
