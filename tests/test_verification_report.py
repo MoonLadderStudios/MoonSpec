@@ -463,3 +463,26 @@ def test_legacy_success_cannot_reuse_explicit_nonpassing_rows(completed, status)
     report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = status
     assert not acceptance.validate_report(report, current)["valid"]
     assert not acceptance.reuse(report, current)["reusable"]
+
+
+@pytest.mark.parametrize("container", [None, [], "bad", 42, False])
+@pytest.mark.parametrize("field", ["validatedRefs", "acceptance"])
+@pytest.mark.parametrize("with_current", [False, True])
+def test_legacy_nonpass_rejects_malformed_present_binding_containers(completed, container, field, with_current):
+    report, current = completed
+    report.update(pending())
+    if field == "validatedRefs":
+        report[field] = container
+    else:
+        report["validatedRefs"][field] = container
+    result = acceptance.validate_report(report, current if with_current else None)
+    assert not result["valid"]
+    assert f"{field} must be an object when present" in result["errors"]
+
+
+@pytest.mark.parametrize("refs", [None, {}, {"acceptance": {}}, {"acceptance": {"evidence": []}}])
+def test_legacy_nonpass_keeps_omitted_optional_binding_fields_compatible(refs):
+    report = pending()
+    if refs is not None:
+        report["validatedRefs"] = refs
+    assert acceptance.validate_report(report)["valid"]

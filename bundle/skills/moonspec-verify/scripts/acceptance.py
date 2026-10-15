@@ -970,10 +970,16 @@ def _evidence_report_errors(report: dict) -> list[str]:
     An absent legacy binding is not itself an error. Inspect declarations that
     are present without imposing source-bound proof requirements on old reports.
     """
-    refs = report.get("validatedRefs")
-    binding = refs.get("acceptance") if isinstance(refs, dict) else None
-    if not isinstance(binding, dict):
+    if "validatedRefs" not in report:
         return []
+    refs = report["validatedRefs"]
+    if not isinstance(refs, dict):
+        return ["validatedRefs must be an object when present"]
+    if "acceptance" not in refs:
+        return []
+    binding = refs["acceptance"]
+    if not isinstance(binding, dict):
+        return ["acceptance must be an object when present"]
     if "evidence" not in binding:
         return []
     rows = binding["evidence"]
