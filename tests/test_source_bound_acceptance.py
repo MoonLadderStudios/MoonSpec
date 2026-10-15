@@ -59,7 +59,7 @@ def waiting(report):
             }
         ],
     )
-    report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = "UNVERIFIED"
+    report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = "MISSING"
     return report
 
 
@@ -1166,3 +1166,128 @@ def test_malformed_gap_reference_is_never_an_empty_success_or_valid_partial_hand
     assert not acceptance.validate_report(report, current)["valid"]
     result = acceptance.reuse(report, current)
     assert not result["reusable"] and result["reusableRows"] == []
+
+
+def add_unreachable_row(report, current, row_update):
+    plan = {**current["verificationMap"][0], "id": "AC-2", "sourceLocator": "acceptance[1]"}
+    current["scope"]["requirementIds"].append("AC-2")
+    current["verificationMap"].append(plan)
+    binding = report["validatedRefs"]["acceptance"]
+    binding["scope"] = copy.deepcopy(current["scope"])
+    binding["verificationMap"] = copy.deepcopy(current["verificationMap"])
+    binding["evidence"].append({
+        "requirementId": "AC-2",
+        "obligationDigest": acceptance.obligation_digest(plan),
+        "evidenceRefs": [],
+        **row_update,
+    })
+
+
+def test_success_keeps_criterion_outside_verifier_reach_as_unverified(bound):
+    report, current = bound
+    add_unreachable_row(report, current, {
+        "status": "UNVERIFIED",
+        "unverified": {"reason": "Needs a GPU host.", "verifiableBy": "GPU CI lane"},
+    })
+    assert acceptance.validate_report(report, current)["valid"]
+    assert acceptance.reuse(report, current)["reusable"]
+
+
+@pytest.mark.parametrize("row_update", [
+    {"status": "UNVERIFIED"},
+    {"status": "MISSING", "unverified": {"reason": "No GPU.", "verifiableBy": "GPU CI"}},
+    {"status": "UNVERIFIED", "unverified": {"reason": "No GPU."}},
+])
+def test_unverified_success_row_needs_its_reason_and_owner(bound, row_update):
+    report, current = bound
+    add_unreachable_row(report, current, row_update)
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
+@pytest.mark.parametrize("omit_refs", [False, True])
+def test_unverified_row_accepts_empty_or_omitted_refs(bound, omit_refs):
+    report, current = bound
+    add_unreachable_row(report, current, {
+        "status": "UNVERIFIED",
+        "unverified": {"reason": "No GPU.", "verifiableBy": "GPU CI"},
+    })
+    if omit_refs:
+        del report["validatedRefs"]["acceptance"]["evidence"][1]["evidenceRefs"]
+    assert acceptance.validate_report(report, current)["valid"]
+    assert [r["requirementId"] for r in acceptance.reuse(report, current)["reusableRows"]] == ["AC-1"]
+
+
+@pytest.mark.parametrize("verdict,action", [
+    ("ADDITIONAL_WORK_NEEDED", "reattempt_current_step"),
+    ("NO_DETERMINATION", "reattempt_current_step"),
+])
+def test_unverified_coverage_does_not_hide_observed_failure(bound, verdict, action):
+    report, current = bound
+    add_unreachable_row(report, current, {
+        "status": "UNVERIFIED",
+        "unverified": {"reason": "No GPU.", "verifiableBy": "GPU CI"},
+    })
+    report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = "FAILED"
+    report.update(verdict=verdict, recommendedNextAction=action, remainingWork=[{
+        "requirement": "AC-1", "gapType": "implementation",
+        "remainingWork": "Fix observed wrong output",
+    }])
+    result = acceptance.validate_report(report, current)
+    assert result["valid"], result["errors"]
+    assert not acceptance.reuse(report, current)["reusable"]
+    assert not acceptance.reuse(report, current)["completionEligible"]
+    report.update(verdict="FULLY_IMPLEMENTED", recommendedNextAction="advance")
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
+def test_unverified_criterion_cannot_remain_a_blocking_gap(bound):
+    report, current = bound
+    add_unreachable_row(report, current, {
+        "status": "UNVERIFIED",
+        "unverified": {"reason": "No GPU.", "verifiableBy": "GPU CI"},
+    })
+    report.update(verdict="NO_DETERMINATION", recommendedNextAction="reattempt_current_step", remainingWork=[{
+        "requirement": "AC-2", "gapType": "verification", "remainingWork": "Wait for GPU",
+    }])
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
+def test_all_unverified_completion_preserves_source_and_candidate(bound):
+    report, current = bound
+    row = report["validatedRefs"]["acceptance"]["evidence"][0]
+    row.update(status="UNVERIFIED", unverified={"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    del row["evidenceRefs"]
+    del row["proofMethod"]
+    current["completionTarget"].update(
+        revision=current["subject"]["revision"],
+        contentDigest=current["subject"]["contentDigest"],
+    )
+    report["validatedRefs"]["acceptance"]["completionTarget"] = copy.deepcopy(current["completionTarget"])
+    assert acceptance.validate_report(report, current)["valid"]
+    result = acceptance.reuse(report, current)
+    assert result["completionEligible"] and result["reusableRows"] == []
+    row["obligationDigest"] = "sha256:wrong"
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
+@pytest.mark.parametrize("status", ["FAILED", "VERIFIED", "MISSING"])
+def test_unverified_reason_cannot_mask_another_status_in_nonpass(bound, status):
+    report, current = bound
+    report = waiting(report)
+    row = report["validatedRefs"]["acceptance"]["evidence"][0]
+    row.update(status=status, evidenceRefs=[], unverified={"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    assert not acceptance.validate_report(report, current)["valid"]
+
+
+@pytest.mark.parametrize("disclosure", [None, {}, {"reason": "No GPU."}, {"verifiableBy": "GPU CI"}])
+def test_nonpass_unverified_status_requires_disclosure_and_cannot_be_gap(bound, disclosure):
+    report, current = bound
+    report = waiting(report)
+    row = report["validatedRefs"]["acceptance"]["evidence"][0]
+    row["status"] = "UNVERIFIED"
+    if disclosure is not None:
+        row["unverified"] = disclosure
+    result = acceptance.validate_report(report, current)
+    assert not result["valid"]
+    assert any("reason and owner" in error for error in result["errors"])
+    assert "unverified requirement cannot also remain a blocking gap" in result["errors"]
