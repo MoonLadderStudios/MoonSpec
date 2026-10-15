@@ -70,3 +70,28 @@ def test_unverified_evidence_does_not_waive_required_permission():
         assert "Unverified does not grant permission" in text
         assert "actual missing authorization or operator decision needed to act" in text
         assert "Do not invent an authority gate" in text
+
+
+def test_assessor_preserves_actual_authority_exception():
+    assess = " ".join((BUNDLE / "skills/moonspec-assess/SKILL.md").read_text().split())
+    assert "actual missing authorization or operator decision needed to act" in assess
+    assert "`needs_human`" in assess
+    assert "Do not invent an authority gate" in assess
+    assert "Separately scoped release approvals do not gate implementation completion" in assess
+
+
+def test_assess_plan_tasks_preserve_unverified_status_before_task_coverage():
+    for skill in ("assess", "plan", "tasks"):
+        text = (BUNDLE / f"skills/moonspec-{skill}/SKILL.md").read_text()
+        assert "Unverified criteria are disclosure-only" in text
+        assert "reason and verifiableBy" in text
+    plan = (BUNDLE / "skills/moonspec-plan/SKILL.md").read_text()
+    tasks = (BUNDLE / "skills/moonspec-tasks/SKILL.md").read_text()
+    for text in (plan, tasks):
+        assert "`unverified`: disclosure-only" in text
+        assert "takes precedence over `implemented_unverified`" in text
+        assert "no test, verification, or fallback implementation tasks" in text
+        assert "Observed defects still require remediation" in text
+    assert "`unverified` -> disclosure only" in plan
+    assert "`unverified`: disclosure only" in plan
+    assert "Coverage rules below apply only to executable rows" in tasks

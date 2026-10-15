@@ -400,3 +400,19 @@ def test_legacy_nonpass_unverified_cannot_overlap_remaining_work(completed, with
 
 def test_legacy_nonpass_without_acceptance_binding_still_valid():
     assert acceptance.validate_report(pending())["valid"]
+
+
+@pytest.mark.parametrize("requirement_id", [None, "", " ", 42, [], {}])
+@pytest.mark.parametrize("with_current", [False, True])
+def test_nonpass_unverified_disclosure_requires_source_id(completed, requirement_id, with_current):
+    report, current = completed
+    report.update(pending())
+    unreachable_criterion(report, current, {"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    row = report["validatedRefs"]["acceptance"]["evidence"][1]
+    if requirement_id is None:
+        del row["requirementId"]
+    else:
+        row["requirementId"] = requirement_id
+    result = acceptance.validate_report(report, current if with_current else None)
+    assert not result["valid"]
+    assert "unverified requirement needs a nonblank requirementId" in result["errors"]

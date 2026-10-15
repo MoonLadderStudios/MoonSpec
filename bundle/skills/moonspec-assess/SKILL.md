@@ -107,11 +107,18 @@ Allowed row statuses:
 
 Produce `boundedBacklog` for missing, partial, or conflicting implementation rows. Unverified criteria are disclosure-only: keep their reason and verifiableBy in the assessment, outside `boundedBacklog`. The backlog prioritizes remaining implementation for downstream planning, tasks, and implementation. Verification retains the complete original scope, including previously met requirements as regression constraints.
 
-Separate executable repository changes from required evidence or decisions owned
-outside the current runtime. Name the owner, missing evidence, and resume check
-for each unavailable prerequisite. A mixed backlog can proceed with independent
-repository work. Prerequisites outside the verifier's reach do not block: they
-become Unverified criteria under the shared acceptance policy. Optional
-deployment diagnostics are limitations, not blockers.
+Separate executable repository changes from required evidence outside the current
+runtime. Name the criterion, missing evidence, reason and verifiableBy for each
+unavailable check. A mixed backlog can proceed with independent repository work.
+Checks outside the verifier's reach become Unverified criteria under the shared
+acceptance policy. Optional deployment diagnostics are limitations, not blockers.
+
+Unverified does not grant permission. An actual missing authorization or operator
+decision needed to act on the selected operation remains a `needs_human` handoff;
+do not perform that action or report its authorized completion until supplied.
+Name the exact decision, required owner, and affected action. Do not invent an
+authority gate from unavailable deployment evidence, physical testing, or test
+signoff: those remain Unverified disclosures when outside the verifier's reach.
+Separately scoped release approvals do not gate implementation completion.
 
 Do not choose `FULLY_IMPLEMENTED` for objective acceptance unless every mandatory source row is verified or Unverified under the shared acceptance policy. A bounded initial assessment may identify apparently present implementation; it cannot replace objective verification or prove landing.

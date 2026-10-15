@@ -985,6 +985,8 @@ def _unverified_report_errors(report: dict) -> list[str]:
                 errors.append("unverified requirement needs compatible status, reason and owner without evidence")
             if _text(row.get("requirementId")):
                 unverified_ids.add(row["requirementId"])
+            else:
+                errors.append("unverified requirement needs a nonblank requirementId")
     work = report.get("remainingWork")
     if isinstance(work, list):
         for item in work:

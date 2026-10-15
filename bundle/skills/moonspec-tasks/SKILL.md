@@ -116,16 +116,20 @@ Build a traceability inventory before writing tasks:
 - One row per in-scope stable source claim ID from `## Source Packet`, such as `CLAIM-*`, `DESIGN-REQ-*` or `DOC-REQ-*`.
 - One row per relevant AGENTS.md principle, repo constraint, or testing-discipline requirement that affects implementation or testing.
 
-For each row, carry forward the matching `## Requirement Status` entry from `plan.md` when present. Allowed statuses are `missing`, `partial`, `implemented_unverified`, and `implemented_verified`; if a row has no status, treat it as `missing`.
+For each row, carry forward the matching `## Requirement Status` entry from `plan.md` when present. Allowed statuses are `missing`, `partial`, `unverified`, `implemented_unverified`, and `implemented_verified`; apply assessment disclosure precedence before treating an otherwise unclassified row as `missing`.
+
+Unverified criteria are disclosure-only. Carry an assessment's `UNVERIFIED` row into the plan and task inventory as `unverified`, retaining its source ID, reason and verifiableBy. This status takes precedence over `implemented_unverified` when the check remains outside the verifier's capabilities, access, or time after reasonable attempts. It creates no test, verification, or fallback implementation tasks, even for required criteria. Do not infer missing implementation from unavailable evidence. Observed defects still require remediation; classify those separately as `missing`, `partial`, or conflicting implementation work. Actual permission needed to perform an action remains an authority handoff under the shared acceptance policy, never an Unverified evidence waiver.
 
 Status handling:
+
+- `unverified`: disclosure-only; preserve source ID, reason and verifiableBy outside executable tasks and the remediation backlog.
 
 - `missing`: generate failing unit and/or integration test tasks, red-first confirmation tasks, and implementation tasks.
 - `partial`: generate failing tests for the missing behavior, red-first confirmation tasks, and implementation tasks that complete the requirement.
 - `implemented_unverified`: generate verification tests first, red-first confirmation tasks when the expected behavior is not already covered, and explicit fallback implementation tasks to run if verification fails.
 - `implemented_verified`: do not generate new implementation tasks by default, but preserve traceability and include final validation so the existing evidence remains checked.
 
-Each inventory row needs task coverage appropriate to its status and either unit or integration test coverage unless it is `implemented_verified` with strong existing evidence. Acceptance scenarios, external boundaries, workflows, persistence, contracts, CLI/API/UI behavior, and service interactions require integration test coverage unless the spec clearly makes integration irrelevant or the row is already `implemented_verified` by existing integration evidence.
+Each executable inventory row needs task coverage appropriate to its status and either unit or integration test coverage unless it is `implemented_verified` with strong existing evidence. Acceptance scenarios, external boundaries, workflows, persistence, contracts, CLI/API/UI behavior, and service interactions require integration test coverage unless the spec clearly makes integration irrelevant or the row is already `implemented_verified` by existing integration evidence.
 
 ## Generate tasks.md
 
@@ -259,6 +263,8 @@ Include only work that strengthens the completed story without adding hidden sco
 
 ## Coverage Rules
 
+Coverage rules below apply only to executable rows. `unverified` rows of every kind, including acceptance scenarios, public boundaries, negative constraints, contracts, and required checks, remain disclosure-only; no task coverage or fallback work is generated for them.
+
 - Each `FR-*` with status `missing` or `partial` must map to at least one implementation task and at least one unit or integration test task.
 - Each `FR-*` with status `implemented_unverified` must map to at least one verification test task and one conditional fallback implementation task.
 - Each `FR-*` with status `implemented_verified` must map to existing evidence and a final validation task; do not add implementation work unless the user asks for stronger coverage.
@@ -304,7 +310,7 @@ Before reporting, verify:
 - Red-first confirmation tasks exist before production code tasks.
 - Every traceability inventory row has task coverage.
 - Every task maps to stable claim IDs or explicitly explains why none apply.
-- `## Requirement Status` rows from `plan.md`, when present, are reflected without forcing unnecessary implementation tasks for `implemented_verified` rows.
+- `## Requirement Status` rows from `plan.md`, when present, preserve `unverified` disclosures without executable tasks and avoid unnecessary implementation tasks for `implemented_verified` rows.
 - `implemented_unverified` rows include fallback implementation tasks that are conditional on verification failure.
 - Final `/moonspec.verify` task exists.
 
