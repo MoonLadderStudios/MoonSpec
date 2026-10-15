@@ -163,8 +163,12 @@ The helper's `admission --current current.json [--previous admission.json]`
 returns `readyRequirementIds`, `waitingRequirementIds`, `blockedRequirementIds`,
 `fingerprint`, `madeProgress`, and diagnostics. `--previous` is the prior admission
 result, not a prior assessment. Run independent ready rows; busy work stays with
-its existing owner, and unavailable/unauthorized rows the verifier cannot reach
-are Unverified. Missing or unresolved probes are never presumed ready. The fingerprint
+its existing owner. Classify unavailable/unauthorized probe results by cause:
+an actual required grant for the selected action remains `needs_human`, with
+the exact decision, owner, and action; do not execute it or claim it complete.
+Evidence inaccessible due to unavailable credentials or test environments remains
+Unverified with reason and verifiableBy. A probe status alone does not establish
+a missing human authorization. Missing or unresolved probes are never presumed ready. The fingerprint
 uses source, content, obligations, and readiness; changing a report ID, timestamp,
 or probe artifact while readiness stays unchanged is not implementation progress.
 A changed evidence inventory can still resume evidence-only verification. This

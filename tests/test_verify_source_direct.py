@@ -175,3 +175,30 @@ def test_verifier_normalizes_authority_handoff_to_acceptance_status():
     text = " ".join((BUNDLE / "skills/moonspec-verify/SKILL.md").read_text().split())
     assert "`needs_human`, use verification row status `NO_DETERMINATION`" in text
     assert "`recommendedNextAction: needs_human`" in text
+
+
+def test_exported_commands_delegate_status_policy_and_preset_honors_it():
+    import yaml
+    manifest = yaml.safe_load((BUNDLE / "moonspec.bundle.yaml").read_text())
+    for command in manifest["exports"]["commands"]:
+        for kind in ("markdown", "gemini"):
+            text = (BUNDLE / command[kind]).read_text()
+            if command["skill"] in {"moonspec-plan", "moonspec-tasks", "moonspec-implement", "moonspec-orchestrate"}:
+                assert command["skill"] in text
+                assert "Tests are REQUIRED" not in text
+                assert "every traceability item has implementation coverage" not in text
+                if kind == "markdown":
+                    assert "`unverified`" in text and "`needs_human`" in text
+                    assert "owns" in text and "hooks once" in text
+    preset = (BUNDLE / manifest["exports"]["presets"][0]["path"]).read_text()
+    assert "all-Unverified" in preset
+    assert "needs_human" in preset and "executable rows" in preset
+    assert "Verify tasks.md covers exactly one story and includes red-first" not in preset
+
+
+def test_admission_policy_distinguishes_missing_authority_from_unavailable_access():
+    policy = " ".join((BUNDLE / "skills/moonspec-verify/references/acceptance-policy.md").read_text().split())
+    assert "actual required grant" in policy
+    assert "`needs_human`" in policy
+    assert "unavailable credentials or test environments" in policy
+    assert "unavailable/unauthorized rows the verifier cannot reach are Unverified" not in policy

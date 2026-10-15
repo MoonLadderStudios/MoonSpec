@@ -439,3 +439,27 @@ def test_legacy_nonpass_rejects_malformed_present_evidence(completed, rows, with
     result = acceptance.validate_report(report, current if with_current else None)
     assert not result["valid"]
     assert "acceptance evidence must be a list" in result["errors"]
+
+
+@pytest.mark.parametrize("row", [
+    None, 42, "row", [], False, {}, {"status": "FAILED"},
+    {"requirementId": "AC-1", "status": "FAILED"},
+    {"requirementId": "AC-1", "status": "FAILED", "evidenceRefs": None},
+    {"requirementId": "AC-1", "status": "INVALID", "evidenceRefs": []},
+    {"requirementId": "AC-1", "status": "VERIFIED", "evidenceRefs": []},
+    {"requirementId": "AC-1", "evidenceRefs": [42]},
+])
+@pytest.mark.parametrize("with_current", [False, True])
+def test_legacy_nonpass_validates_every_present_evidence_row(completed, row, with_current):
+    report, current = completed
+    report.update(pending())
+    report["validatedRefs"]["acceptance"]["evidence"] = [row]
+    assert not acceptance.validate_report(report, current if with_current else None)["valid"]
+
+
+@pytest.mark.parametrize("status", ["FAILED", "PARTIAL", "MISSING", "CONFLICT", "NO_DETERMINATION"])
+def test_legacy_success_cannot_reuse_explicit_nonpassing_rows(completed, status):
+    report, current = completed
+    report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = status
+    assert not acceptance.validate_report(report, current)["valid"]
+    assert not acceptance.reuse(report, current)["reusable"]

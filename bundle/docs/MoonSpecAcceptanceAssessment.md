@@ -6,4 +6,4 @@ External systems can provide a matrix, including Jira, GitHub, and MoonMind adap
 
 Vertical Multi-Surface Story coverage should stay grouped when one user-visible acceptance row spans multiple implementation surfaces.
 
-Negative Constraints must be preserved and verified or explicitly ruled out.
+Negative constraints stay in scope: verify them, disclose unavailable checks as Unverified, or preserve an actual needs_human authority handoff. Never invent tasks or a pass from unavailable evidence.

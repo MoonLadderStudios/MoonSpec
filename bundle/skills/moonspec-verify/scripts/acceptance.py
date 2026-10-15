@@ -54,7 +54,7 @@ def _unverified(row: dict) -> bool:
 def _evidenced_or_unverified(row: dict) -> bool:
     if row.get("status") == "UNVERIFIED" or row.get("unverified") is not None:
         return _unverified(row)
-    return nonblank_strings(row.get("evidenceRefs"))
+    return ("status" not in row or row["status"] == "VERIFIED") and nonblank_strings(row.get("evidenceRefs"))
 
 
 def capture(
@@ -964,8 +964,8 @@ def _current_nonpassing_errors(report: dict, current: dict) -> list[str]:
     return errors
 
 
-def _unverified_report_errors(report: dict) -> list[str]:
-    """Enforce disclosures even in compatibility reports without source maps.
+def _evidence_report_errors(report: dict) -> list[str]:
+    """Validate present evidence rows, including legacy reports without source maps.
 
     An absent legacy binding is not itself an error. Inspect declarations that
     are present without imposing source-bound proof requirements on old reports.
@@ -983,14 +983,26 @@ def _unverified_report_errors(report: dict) -> list[str]:
     unverified_ids = set()
     for row in rows:
         if not isinstance(row, dict):
+            errors.append("acceptance evidence row must be an object")
             continue
-        if row.get("status") == "UNVERIFIED" or row.get("unverified") is not None:
+        declared = row.get("status") == "UNVERIFIED" or row.get("unverified") is not None
+        if not _text(row.get("requirementId")):
+            errors.append("unverified requirement needs a nonblank requirementId" if declared
+                          else "acceptance evidence row needs a nonblank requirementId")
+        if "status" in row and (not isinstance(row["status"], str)
+                                or row["status"] not in ROW_STATUSES):
+            errors.append("acceptance evidence row has an invalid status")
+        if declared:
             if not _unverified(row):
                 errors.append("unverified requirement needs compatible status, reason and owner without evidence")
             if _text(row.get("requirementId")):
                 unverified_ids.add(row["requirementId"])
-            else:
-                errors.append("unverified requirement needs a nonblank requirementId")
+        else:
+            evidence_refs = row.get("evidenceRefs")
+            if not isinstance(evidence_refs, list) or any(not _text(ref) for ref in evidence_refs):
+                errors.append("acceptance evidence row needs valid evidenceRefs")
+            elif row.get("status", "VERIFIED") == "VERIFIED" and not evidence_refs:
+                errors.append("verified requirement has no objective evidence references")
     work = report.get("remainingWork")
     if isinstance(work, list):
         for item in work:
@@ -1023,7 +1035,7 @@ def validate_report(report: object, current: dict | None = None) -> dict:
         "NO_DETERMINATION": {"reattempt_current_step", "needs_human", "blocked"},
         "BLOCKED": {"blocked"},
     }
-    errors = _unverified_report_errors(report)
+    errors = _evidence_report_errors(report)
     verdict = report.get("verdict")
     action = report.get("recommendedNextAction")
     if not isinstance(verdict, str) or verdict not in actions:
