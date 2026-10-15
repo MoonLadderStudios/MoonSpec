@@ -510,3 +510,24 @@ def test_legacy_nonpass_rejects_duplicate_or_conflicting_evidence_ids(completed,
     result = acceptance.validate_report(report)
     assert not result["valid"]
     assert "duplicate requirement evidence rows" in result["errors"]
+
+
+@pytest.mark.parametrize("status", ["VERIFIED", "UNVERIFIED", "FAILED"])
+@pytest.mark.parametrize("gap_ids", [None, ["AC-1"], ["AC-1", "AC-2"]])
+@pytest.mark.parametrize("with_reference", [False, True])
+def test_legacy_row_status_agrees_with_normalized_gap_ids(completed, status, gap_ids, with_reference):
+    report, _ = completed
+    report.update(pending())
+    row = report["validatedRefs"]["acceptance"]["evidence"][0]
+    row["status"] = status
+    if status == "UNVERIFIED":
+        row.pop("evidenceRefs")
+        row["unverified"] = {"reason": "No GPU", "verifiableBy": "GPU CI"}
+    if gap_ids is not None:
+        report["remainingWork"][0]["requirementIds"] = gap_ids
+    if with_reference:
+        report["remainingWorkRef"] = "artifact:remaining-work"
+    result = acceptance.validate_report(report)
+    assert result["valid"] is (status == "FAILED")
+    if status != "FAILED":
+        assert f"{status.lower()} requirement cannot also remain a blocking gap" in result["errors"]

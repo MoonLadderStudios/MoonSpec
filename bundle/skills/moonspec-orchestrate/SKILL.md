@@ -122,12 +122,16 @@ Run `moonspec-assess` before planning when `artifacts/moonspec/source-acceptance
 exists and its `featureId` matches the active feature. Preserve the assessment's
 bounded backlog, Unverified disclosures, and actual authority handoffs for planning.
 If no matching source matrix exists, skip assessment without blocking planning.
+A new or changed assessment makes existing plan and tasks stale when source,
+statuses, backlog, disclosures, or authority handoffs change. Refresh the plan
+before regenerating tasks, even if their artifact gates previously passed.
+An unchanged assessment or timestamp-only rewrite does not require regeneration.
 
 ### 3. Plan
 
 For the selected spec:
 
-1. Run `moonspec-plan` if the plan gate is incomplete.
+1. Run `moonspec-plan` if the plan gate is incomplete or its assessment changed.
 2. Verify generated artifacts.
 3. Stop if planning requires unresolved user input.
 

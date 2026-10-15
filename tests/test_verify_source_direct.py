@@ -212,3 +212,10 @@ def test_orchestrate_workflow_assesses_matching_source_before_planning():
     assert assess < plan
     assert "featureId" in workflow[:plan]
     assert "skip assessment" in workflow[:plan]
+
+
+def test_new_or_changed_assessment_invalidates_plan_and_tasks():
+    text = " ".join((BUNDLE / "skills/moonspec-orchestrate/SKILL.md").read_text().split())
+    assert "new or changed assessment makes existing plan and tasks stale" in text
+    assert "Refresh the plan before regenerating tasks" in text
+    assert "plan gate is incomplete or its assessment changed" in text

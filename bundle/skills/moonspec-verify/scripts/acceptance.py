@@ -993,6 +993,7 @@ def _evidence_report_errors(report: dict) -> list[str]:
         return ["acceptance evidence must be a list"]
     errors = []
     unverified_ids = set()
+    verified_ids = set()
     seen_ids = set()
     for row in rows:
         if not isinstance(row, dict):
@@ -1006,6 +1007,8 @@ def _evidence_report_errors(report: dict) -> list[str]:
             if row["requirementId"] in seen_ids:
                 errors.append("duplicate requirement evidence rows")
             seen_ids.add(row["requirementId"])
+            if row.get("status") == "VERIFIED":
+                verified_ids.add(row["requirementId"])
         if "status" in row and (not isinstance(row["status"], str)
                                 or row["status"] not in ROW_STATUSES):
             errors.append("acceptance evidence row has an invalid status")
@@ -1026,8 +1029,10 @@ def _evidence_report_errors(report: dict) -> list[str]:
             if not isinstance(item, dict):
                 continue
             ids = _remaining_work_ids(item)
-            if ids is not None and ids & unverified_ids:
-                errors.append("unverified requirement cannot also remain a blocking gap")
+            if ids is not None:
+                for label, resolved_ids in (("verified", verified_ids), ("unverified", unverified_ids)):
+                    if ids & resolved_ids:
+                        errors.append(f"{label} requirement cannot also remain a blocking gap")
     return errors
 
 
