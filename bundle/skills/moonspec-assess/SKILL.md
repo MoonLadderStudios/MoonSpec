@@ -40,7 +40,7 @@ whole-issue completion. Missing optional enrichment is only a limitation.
 Write the initial assessment to `assessment_artifact_path` and the step result:
 `issue_provider`, `issue_ref`, `issue_url`, `verdict`, `branch`, `base_ref`, `mode`,
 `summary`, and `requirements` (stable `id`, original `description`, `status` of
-`met`, `partially_met`, `not_met`, or `unverifiable`, and evidence/reason).
+`met`, `partially_met`, `not_met`, `unverifiable`, or `needs_human`, and evidence/reason).
 `unverifiable` rows must include `unverified: {reason, verifiableBy}` with nonblank
 strings and a stable nonblank `id`; this is the issue-brief spelling of `UNVERIFIED`.
 Record candidate `subject`, original `scope`, and `completionTarget` identities
@@ -104,6 +104,7 @@ Allowed row statuses:
 - `CONFLICT`
 - `UNVERIFIED`
 - `OUT_OF_SCOPE`
+- `needs_human`: actual authority handoff, with the exact decision, owner, and action; excluded from executable backlog until authorized.
 
 `UNVERIFIED` rows use the same disclosure object and stable source ID as issue-brief
 `unverifiable` rows. Neither status asserts a pass.
@@ -121,7 +122,8 @@ acceptance policy. Optional deployment diagnostics are limitations, not blockers
 Unverified does not grant permission. An actual missing authorization or operator
 decision needed to act on the selected operation remains a `needs_human` handoff;
 do not perform that action or report its authorized completion until supplied.
-Name the exact decision, required owner, and affected action. Do not invent an
+Carry `needs_human` as the row status into planning and tasks, with the exact
+decision, owner, and action; do not convert it into missing implementation. Do not invent an
 authority gate from unavailable deployment evidence, physical testing, or test
 signoff: those remain Unverified disclosures when outside the verifier's reach.
 Separately scoped release approvals do not gate implementation completion.

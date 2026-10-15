@@ -974,9 +974,11 @@ def _unverified_report_errors(report: dict) -> list[str]:
     binding = refs.get("acceptance") if isinstance(refs, dict) else None
     if not isinstance(binding, dict):
         return []
-    rows = binding.get("evidence")
-    if not isinstance(rows, list):
+    if "evidence" not in binding:
         return []
+    rows = binding["evidence"]
+    if not isinstance(rows, list):
+        return ["acceptance evidence must be a list"]
     errors = []
     unverified_ids = set()
     for row in rows:

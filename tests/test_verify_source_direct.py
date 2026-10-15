@@ -137,3 +137,41 @@ def test_verify_binding_allows_disclosure_instead_of_evidence():
     binding = text.split("## Evidence binding", 1)[1].split("## Report", 1)[0]
     assert "or a valid Unverified disclosure" in binding
     assert "no evidence refs" in binding
+
+
+def test_authority_rows_survive_planning_without_executable_fallback():
+    for skill in ("assess", "plan", "tasks", "orchestrate", "align", "implement", "verify"):
+        text = (BUNDLE / f"skills/moonspec-{skill}/SKILL.md").read_text()
+        assert "`needs_human`" in text
+        assert "decision, owner, and action" in " ".join(text.split())
+    for skill in ("plan", "tasks"):
+        text = (BUNDLE / f"skills/moonspec-{skill}/SKILL.md").read_text()
+        assert "`needs_human`: non-executable" in text
+        assert "takes precedence over `unverified` and missing-work defaults" in text
+
+
+def test_all_unverified_lifecycle_preserves_disclosures_through_execution_gates():
+    # A GPU-only criterion has no runnable task; mixed stories retain real code
+    # work. These are instructions consumed by agents, so assert every stage's
+    # contract, not a fabricated implementation of the agent pipeline.
+    for skill in ("orchestrate", "align", "implement"):
+        text = (BUNDLE / f"skills/moonspec-{skill}/SKILL.md").read_text()
+        assert "all-Unverified" in text
+        assert "executable rows" in text
+        assert "reason and verifiableBy" in text
+    orchestrate = (BUNDLE / "skills/moonspec-orchestrate/SKILL.md").read_text()
+    assert "skip implementation when no executable work remains" in orchestrate
+    align = (BUNDLE / "skills/moonspec-align/SKILL.md").read_text()
+    assert "Do not add tasks for `unverified` or `needs_human` rows" in align
+    implement = (BUNDLE / "skills/moonspec-implement/SKILL.md").read_text()
+    assert "skip setup and code/test execution" in implement
+    template = (BUNDLE / "templates/tasks-template.md").read_text()
+    assert "Unit tests and integration tests are REQUIRED" not in template
+    assert "Each executable in-scope requirement" in template
+    assert "all-Unverified" in template and "`needs_human`" in template
+
+
+def test_verifier_normalizes_authority_handoff_to_acceptance_status():
+    text = " ".join((BUNDLE / "skills/moonspec-verify/SKILL.md").read_text().split())
+    assert "`needs_human`, use verification row status `NO_DETERMINATION`" in text
+    assert "`recommendedNextAction: needs_human`" in text

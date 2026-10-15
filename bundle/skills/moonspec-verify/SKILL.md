@@ -503,7 +503,9 @@ another attempt repeating a check that cannot run here.
 Unverified does not grant permission. An actual missing authorization or operator
 decision needed to act on the selected operation remains a `needs_human` handoff;
 do not perform that action or report its authorized completion until supplied.
-Name the exact decision, required owner, and affected action. Do not invent an
+For an assessment or plan row marked `needs_human`, use verification row status
+`NO_DETERMINATION` and `recommendedNextAction: needs_human`, preserving the exact
+decision, owner, and action. Do not copy `needs_human` into the acceptance row status. Do not invent an
 authority gate from unavailable deployment evidence, physical testing, or test
 signoff: those remain Unverified disclosures when outside the verifier's reach.
 Separately scoped release approvals do not gate implementation completion.

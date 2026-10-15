@@ -115,11 +115,13 @@ Build a traceability inventory before writing tasks:
 - One row per in-scope stable source claim ID from `## Source Packet`, such as `CLAIM-*`, `DESIGN-REQ-*` or `DOC-REQ-*`.
 - One row per relevant AGENTS.md principle, repo constraint, or testing-discipline requirement that affects implementation or testing.
 
-For each row, carry forward the matching `## Requirement Status` entry from `plan.md` when present. Allowed statuses are `missing`, `partial`, `unverified`, `implemented_unverified`, and `implemented_verified`; apply assessment disclosure precedence before treating an otherwise unclassified row as `missing`.
+For each row, carry forward the matching `## Requirement Status` entry from `plan.md` when present. Allowed statuses are `needs_human`, `missing`, `partial`, `unverified`, `implemented_unverified`, and `implemented_verified`; apply assessment disclosure precedence before treating an otherwise unclassified row as `missing`.
 
-Unverified criteria are disclosure-only. Normalize issue-brief `unverifiable` and source-matrix `UNVERIFIED` to `unverified`, retaining the source ID and nonblank `unverified.reason` and `unverified.verifiableBy` (reason and verifiableBy in the plan table). This status takes precedence over `implemented_unverified` when the check remains outside the verifier's capabilities, access, or time after reasonable attempts. It creates no test, verification, or fallback implementation tasks, even for required criteria. When every row is `unverified`, retain disclosures and the final report verification task only; do not create setup, test-tool installation, red-first, implementation, or polish work. Do not infer missing implementation from unavailable evidence. Observed defects still require remediation; classify those separately as `missing`, `partial`, or conflicting implementation work. Actual permission needed to perform an action remains an authority handoff under the shared acceptance policy, never an Unverified evidence waiver.
+Unverified criteria are disclosure-only. Normalize issue-brief `unverifiable` and source-matrix `UNVERIFIED` to `unverified`, retaining the source ID and nonblank `unverified.reason` and `unverified.verifiableBy` (reason and verifiableBy in the plan table). This status takes precedence over `implemented_unverified` when the check remains outside the verifier's capabilities, access, or time after reasonable attempts. It creates no test, verification, or fallback implementation tasks, even for required criteria. When every row is `unverified`, retain disclosures and the final report verification task only; do not create setup, test-tool installation, red-first, implementation, or polish work. Do not infer missing implementation from unavailable evidence. Observed defects still require remediation; classify those separately as `missing`, `partial`, or conflicting implementation work. Actual permission needed to perform an action uses `needs_human`, never an Unverified evidence waiver.
 
 Status handling:
+
+- `needs_human`: non-executable actual authority handoff; preserve the source ID and exact decision, owner, and action. It takes precedence over `unverified` and missing-work defaults; do not create executable or fallback tasks for the affected action. Continue independent authorized work, but do not claim the dependent operation complete.
 
 - `unverified`: disclosure-only; preserve source ID, reason and verifiableBy outside executable tasks and the remediation backlog.
 
@@ -253,11 +255,11 @@ Include only work that strengthens the completed story without adding hidden sco
 - Additional edge-case coverage.
 - Additional operational integration coverage.
 - Quickstart validation.
-- A final task to run `/moonspec.verify` after any executable work finishes, preserving Unverified disclosures even when no tests can run.
+- A final task to run `/moonspec.verify` after any executable work finishes, preserving Unverified disclosures even when no tests can run; preserve any pending `needs_human` handoff.
 
 ## Coverage Rules
 
-Coverage rules below apply only to executable rows. `unverified` rows of every kind, including acceptance scenarios, public boundaries, negative constraints, contracts, and required checks, remain disclosure-only; no task coverage or fallback work is generated for them.
+Coverage rules below apply only to executable rows. `unverified` and `needs_human` rows of every kind, including acceptance scenarios, public boundaries, negative constraints, contracts, and required checks, remain non-executable; preserve disclosures or authority handoffs rather than generating task coverage or fallback work.
 
 - Each `FR-*` with status `missing` or `partial` must map to at least one implementation task and at least one unit or integration test task.
 - Each `FR-*` with status `implemented_unverified` must map to at least one verification test task and one conditional fallback implementation task.

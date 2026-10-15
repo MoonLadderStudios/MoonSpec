@@ -153,13 +153,14 @@ When a row originates from a stable source claim, include the claim ID in the `I
 
 Allowed `Status` values:
 
+- `needs_human`: non-executable actual authority handoff; preserve the source ID and exact decision, owner, and action. It takes precedence over `unverified` and missing-work defaults; do not create executable or fallback tasks for the affected action. Continue independent authorized work, but do not claim the dependent operation complete.
 - `missing`: no adequate implementation evidence found
 - `partial`: some implementation exists, but the requirement is not fully satisfied
 - `unverified`: disclosure-only criterion whose check remains unavailable under the shared acceptance policy
 - `implemented_unverified`: behavior appears present and verification is feasible, but required proof is missing or insufficient
 - `implemented_verified`: behavior is already present and sufficiently covered by existing tests or other evidence
 
-Unverified criteria are disclosure-only. Normalize issue-brief `unverifiable` and source-matrix `UNVERIFIED` to `unverified`, retaining the source ID and nonblank `unverified.reason` and `unverified.verifiableBy` (reason and verifiableBy in the plan table). This status takes precedence over `implemented_unverified` when the check remains outside the verifier's capabilities, access, or time after reasonable attempts. It creates no test, verification, or fallback implementation tasks, even for required criteria. Do not infer missing implementation from unavailable evidence. Observed defects still require remediation; classify those separately as `missing`, `partial`, or conflicting implementation work. Actual permission needed to perform an action remains an authority handoff under the shared acceptance policy, never an Unverified evidence waiver.
+Unverified criteria are disclosure-only. Normalize issue-brief `unverifiable` and source-matrix `UNVERIFIED` to `unverified`, retaining the source ID and nonblank `unverified.reason` and `unverified.verifiableBy` (reason and verifiableBy in the plan table). This status takes precedence over `implemented_unverified` when the check remains outside the verifier's capabilities, access, or time after reasonable attempts. It creates no test, verification, or fallback implementation tasks, even for required criteria. Do not infer missing implementation from unavailable evidence. Observed defects still require remediation; classify those separately as `missing`, `partial`, or conflicting implementation work. Actual permission needed to perform an action uses `needs_human`, never an Unverified evidence waiver.
 
 Rules:
 
@@ -196,6 +197,7 @@ Research and resolve:
 
 For each in-scope item, inspect relevant code and tests, then classify it:
 
+- `needs_human` -> preserve the authority handoff without executable tasks
 - `unverified` -> disclosure only; preserve source ID, reason and verifiableBy without executable work
 - `missing` -> requires tests and implementation
 - `partial` -> requires tests and implementation changes
@@ -239,6 +241,7 @@ Quickstart guidance:
 - Include unit/integration commands and required setup only for executable checks; use N/A for disclosure-only rows.
 - Describe how to verify the single story end to end.
 - Reflect requirement status decisions:
+  - `needs_human`: authority handoff only; no action before permission
   - `unverified`: disclosure only; no runnable check or implementation contingency
   - `missing` and `partial`: tests first, then implementation
   - `implemented_unverified`: verification tests first, then a planned implementation contingency if those tests fail

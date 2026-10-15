@@ -428,3 +428,14 @@ def test_legacy_nonpass_rejects_nonlist_requirement_ids(completed, ids, with_bin
     if not with_binding:
         del report["validatedRefs"]
     assert not acceptance.validate_report(report)["valid"]
+
+
+@pytest.mark.parametrize("rows", [None, {}, "rows", 42, False])
+@pytest.mark.parametrize("with_current", [False, True])
+def test_legacy_nonpass_rejects_malformed_present_evidence(completed, rows, with_current):
+    report, current = completed
+    report.update(pending())
+    report["validatedRefs"]["acceptance"]["evidence"] = rows
+    result = acceptance.validate_report(report, current if with_current else None)
+    assert not result["valid"]
+    assert "acceptance evidence must be a list" in result["errors"]
