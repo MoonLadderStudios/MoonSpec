@@ -365,7 +365,12 @@ def test_legacy_explicit_unverified_with_disclosure_is_nonblocking(completed):
     unreachable_criterion(report, current, {"reason": "No GPU.", "verifiableBy": "GPU CI"})
     report["validatedRefs"]["acceptance"]["evidence"][1]["status"] = "UNVERIFIED"
     assert acceptance.validate_report(report, current)["valid"]
+    before = copy.deepcopy(report)
     assert acceptance.reuse(report, current)["reusable"]
+    assert report == before
+    row = report["validatedRefs"]["acceptance"]["evidence"][1]
+    assert row["status"] == "UNVERIFIED"
+    assert row["unverified"] == {"reason": "No GPU.", "verifiableBy": "GPU CI"}
 
 
 @pytest.mark.parametrize("with_current", [False, True])
@@ -389,6 +394,7 @@ def test_legacy_nonpass_unverified_cannot_overlap_remaining_work(completed, with
     report, current = completed
     report.update(pending())
     unreachable_criterion(report, current, {"reason": "No GPU.", "verifiableBy": "GPU CI"})
+    report["validatedRefs"]["acceptance"]["evidence"][0]["status"] = "MISSING"
     row = report["validatedRefs"]["acceptance"]["evidence"][1]
     if explicit_status:
         row["status"] = "UNVERIFIED"
@@ -512,14 +518,15 @@ def test_legacy_nonpass_rejects_duplicate_or_conflicting_evidence_ids(completed,
     assert "duplicate requirement evidence rows" in result["errors"]
 
 
-@pytest.mark.parametrize("status", ["VERIFIED", "UNVERIFIED", "FAILED"])
+@pytest.mark.parametrize("status", [None, "VERIFIED", "UNVERIFIED", "FAILED"])
 @pytest.mark.parametrize("gap_ids", [None, ["AC-1"], ["AC-1", "AC-2"]])
 @pytest.mark.parametrize("with_reference", [False, True])
 def test_legacy_row_status_agrees_with_normalized_gap_ids(completed, status, gap_ids, with_reference):
     report, _ = completed
     report.update(pending())
     row = report["validatedRefs"]["acceptance"]["evidence"][0]
-    row["status"] = status
+    if status is not None:
+        row["status"] = status
     if status == "UNVERIFIED":
         row.pop("evidenceRefs")
         row["unverified"] = {"reason": "No GPU", "verifiableBy": "GPU CI"}
@@ -530,4 +537,16 @@ def test_legacy_row_status_agrees_with_normalized_gap_ids(completed, status, gap
     result = acceptance.validate_report(report)
     assert result["valid"] is (status == "FAILED")
     if status != "FAILED":
-        assert f"{status.lower()} requirement cannot also remain a blocking gap" in result["errors"]
+        assert f"{(status or 'VERIFIED').lower()} requirement cannot also remain a blocking gap" in result["errors"]
+
+
+@pytest.mark.parametrize("reference", [None, [], {}, 42, False, "", "  "])
+@pytest.mark.parametrize("with_inline", [False, True])
+def test_present_remaining_work_reference_must_be_nonblank_string(reference, with_inline):
+    report = pending()
+    if not with_inline:
+        report.pop("remainingWork")
+    report["remainingWorkRef"] = reference
+    result = acceptance.validate_report(report)
+    assert not result["valid"]
+    assert "present remainingWorkRef must be a nonblank string" in result["errors"]

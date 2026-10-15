@@ -1000,6 +1000,7 @@ def _evidence_report_errors(report: dict) -> list[str]:
             errors.append("acceptance evidence row must be an object")
             continue
         declared = row.get("status") == "UNVERIFIED" or row.get("unverified") is not None
+        status = row.get("status", "UNVERIFIED" if declared else "VERIFIED")
         if not _text(row.get("requirementId")):
             errors.append("unverified requirement needs a nonblank requirementId" if declared
                           else "acceptance evidence row needs a nonblank requirementId")
@@ -1007,7 +1008,7 @@ def _evidence_report_errors(report: dict) -> list[str]:
             if row["requirementId"] in seen_ids:
                 errors.append("duplicate requirement evidence rows")
             seen_ids.add(row["requirementId"])
-            if row.get("status") == "VERIFIED":
+            if status == "VERIFIED":
                 verified_ids.add(row["requirementId"])
         if "status" in row and (not isinstance(row["status"], str)
                                 or row["status"] not in ROW_STATUSES):
@@ -1021,7 +1022,7 @@ def _evidence_report_errors(report: dict) -> list[str]:
             evidence_refs = row.get("evidenceRefs")
             if not isinstance(evidence_refs, list) or any(not _text(ref) for ref in evidence_refs):
                 errors.append("acceptance evidence row needs valid evidenceRefs")
-            elif row.get("status", "VERIFIED") == "VERIFIED" and not evidence_refs:
+            elif status == "VERIFIED" and not evidence_refs:
                 errors.append("verified requirement has no objective evidence references")
     work = report.get("remainingWork")
     if isinstance(work, list):
@@ -1054,6 +1055,8 @@ def validate_report(report: object, current: dict | None = None) -> dict:
         "BLOCKED": {"blocked"},
     }
     errors = _evidence_report_errors(report)
+    if "remainingWorkRef" in report and not _text(report["remainingWorkRef"]):
+        errors.append("present remainingWorkRef must be a nonblank string")
     verdict = report.get("verdict")
     action = report.get("recommendedNextAction")
     if not isinstance(verdict, str) or verdict not in actions:

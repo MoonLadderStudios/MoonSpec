@@ -272,6 +272,11 @@ candidate, source, or expired proof requires the affected verification again.
 Identical valid evidence needs no arbitrary full-suite repeat. An unchanged
 checkout and a previous verdict alone are not objective evidence.
 
+For unchanged source and candidate bindings, reuse of a disclosed Unverified
+disposition preserves its status, reason, and verifier owner; it is not proof that
+the check passed. A fresh requested verification may reassess available checks,
+but possible capability changes alone do not require rerunning accepted disclosures.
+
 `reuse` returns qualified `reusableRows` from source-bound objective bindings even
 when the aggregate is blocked or nonpassing. It checks each row's obligation,
 subject content, referenced bytes and freshness independently; newly added
